@@ -1,0 +1,150 @@
+const mongoose = require('mongoose');
+const validator = require('validator');
+const bcrypt = require('bcryptjs');
+
+const options = { discriminatorKey: 'role' };
+
+const userSchema = new mongoose.Schema({
+    firstName: {
+        type: String,
+        required: [true, 'Please enter your first name'],
+        lowercase: true,
+        minlength: [2, 'First name must be 2 characters or more'],
+    },
+
+    lastName: {
+        type: String,
+        required: [true, 'Please enter your first name'],
+        lowercase: true,
+        minlength: [2, 'Last name must be 2 characters or more'],
+    },
+
+    userName: {
+        type: String,
+        required: [true, 'Please enter your user name'],
+        lowercase: true,
+        unique: true,
+        minlength: [2, 'User name must be 2 characters or more'],
+    },
+
+    email: {
+        type: String,
+        required: [true, 'Please enter your email address'],
+        unique: true,
+        lowercase: true,
+        validate: [validator.isEmail, 'Please provide a valid email']
+    },
+
+    phoneNumber: {
+        type: Number,
+        required: [true, 'Please enter your phone number'],
+        unique: true
+    },
+
+    password: {
+        type: String,
+        required: [true, 'Please enter your password'],
+        minlength: [8, 'Password must be 8 characters or more'],
+        select: false
+    },
+    passwordConfirm: {
+        type: String,
+        required: [true, 'Please confirm your password'],
+        validate: {
+            validator: function(el) {
+                return el === this.password
+            },
+            message: 'Passwords do not match'
+        }
+    },
+    passwordChangedAt: {
+        type: Date,
+        select: false
+    },
+    passwordResetExpireToken: {
+        type: String,
+        select: false
+    },
+    passwordResetExpiresAt: {
+        type: Date,
+        select: false
+    },
+    image:{
+        type: String,
+        default: 'default.jpg'
+    },
+    slug: String,
+    wallet: {
+        type: Number,
+        default: 0
+    },
+    createdAt:{
+        type: Date,
+        default: Date.now()
+    },
+    updatedAt:{
+        type: Date,
+        default: Date.now()
+    },
+    deletedAt: Date,
+}, 
+{
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  },
+options);
+
+userSchema.pre('save', async function(next){
+    if(!this.isModified('password')) return next();
+    
+    this.slug = `${this.firstName}-${this.lastName}`;
+    this.password = await bcrypt.hash(this.password, 12);
+    this.passwordConfirm = undefined;
+    next();
+});
+
+userSchema.pre(/^findOneAnd/, async function(next){
+   
+    try{
+        this.us = await this.findOne();
+        this.us.keiks = `${this.us.firstName}-${this.us.lastName}`;
+        await this.us.save({
+            validateBeforeSave: false
+        });
+    }catch(error){
+        console.log(error)
+    }
+    next();
+});
+
+userSchema.methods.comparePasswords = async function(userPassword, dbPassword){
+    const checked = await bcrypt.compare(userPassword, dbPassword);
+    return checked;
+}
+
+userSchema.methods.correctPassword = async function(
+    candidatePassword,
+    userPassword
+  ) {
+    return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
+    if (this.passwordChangedAt) {
+      const changedTimestamp = parseInt(
+        this.passwordChangedAt.getTime() / 1000,
+        10
+      );
+  
+      return JWTTimestamp < changedTimestamp;
+    }
+  
+    // False means NOT changed
+    return false;
+  };
+
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
+
