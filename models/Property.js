@@ -20,7 +20,7 @@ const propertySchema = new mongoose.Schema({
 
     ratingsAverage: {
         type: Number,
-        default: 0,
+        default: 3.8,
         min: [1, 'Rating must be above 1.0'],
         max: [5, 'Rating must be below 5.0'],
         set: val => Math.round(val * 10) / 10 // 4.666666, 46.6666, 47, 4.7
