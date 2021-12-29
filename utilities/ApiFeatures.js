@@ -4,7 +4,7 @@ class ApiFeatures{
         this.req = req;
         this.queryObj = {...this.req.query};
         this.queryString = Object.keys(this.req.query);
-        this.keywords = ['sort', 'page', 'fields'];
+        this.keywords = ['sort', 'page', 'fields', 'limit'];
         this.fields = this.req.query.fields;
     }
 

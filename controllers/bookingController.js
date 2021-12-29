@@ -145,7 +145,7 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
         console.log(result);
         const booking = await Booking.findById(result.data.metadata.booking);
         booking.totalAmountPaid += result.data.amount * 1/100;
-        booking.status = 'inprogress';
+        booking.status = booking.totalAmountPaid < booking.totalAmount ? 'inprogress' : 'completed';
         booking.lastPaymentDate = Date.now();
         booking.nextPaymentDate = calcNextPaymentDate(booking.paymentInterval);
         booking.reference = result.data.reference;

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const propertySchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Please enter name of your property'],
+        required: [true, 'Please enter name of the property'],
         lowercase: true,
         minlength: [2, 'property name must be 2 characters or more'],
     },
@@ -13,9 +13,9 @@ const propertySchema = new mongoose.Schema({
         required: [true, 'Please enter unit price'],
     },
 
-    vendor: {
+    owner: {
         type: mongoose.Schema.ObjectId,
-        ref: 'User'
+        ref: 'User',
     },
 
     ratingsAverage: {
@@ -24,48 +24,49 @@ const propertySchema = new mongoose.Schema({
         min: [1, 'Rating must be above 1.0'],
         max: [5, 'Rating must be below 5.0'],
         set: val => Math.round(val * 10) / 10 // 4.666666, 46.6666, 47, 4.7
-      },
+    },
 
-      ratingsQuantity: {
+    ratingsQuantity: {
         type: Number,
         default: 0
-      },
-
-    numberOfRooms: {
-        type: Number,
-        required: [true, 'Please enter the number of rooms'],
-    },
-
-    carPark: {
-        type: String,
-        required: [true, 'Please select a car park option'],
-        enum: {
-            values: ['true', 'false'],
-            message: 'car park option can only either be true or false'
-        }
-    },
-
-    carParkCapacity: {
-        type: Number,
-        required: [true, 'Please enter car park capacity'],
-    },
-
-    compoundSize: {
-        type: String,
-        required: [true, 'Please enter compound size'],
     },
 
     location: {
-        type: String,
-        required: [true, 'Please enter location'],
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point']
+        },
+        coordinates: {
+            type: Array,
+            validate: {
+                validator: function(val) {
+                    return val.length !== 0 ? true : false;
+                },
+                message: 'Please enter property coordinates'
+            }
+        }
     },
 
-    coverPhoto: {
+    city: {
         type: String,
-        required: [true, 'Please upload a cover photo'],
+        required: [true, 'Please enter city'],
+        lowercase: true
     },
 
-    photos: [String],
+    state: {
+        type: String,
+        required: [true, 'Please enter state'],
+        lowercase: true
+    },
+
+    address: {
+        type: String,
+        required: [true, 'Please enter address'],
+        lowercase: true
+    },
+
+    images: [String],
 
     videos: [String],
 
@@ -74,15 +75,15 @@ const propertySchema = new mongoose.Schema({
         required: [true, 'Please enter a short description'],
     },
 
-    type: {
-        type: String,
-        required: [true, 'Please select a property type'],
+    perks: {
+        type: Array,
+        required: [true, 'Please enter perks'],
     },
 
-    perks: [
+    amenities: [
         {
             type: mongoose.Schema.ObjectId,
-            ref: 'Perk'
+            ref: 'Amenity'
         }
     ],
 
@@ -90,40 +91,23 @@ const propertySchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please enter property status'],
         enum: {
-            values: ['featured', 'published', 'draft'],
-            message: 'property status can only either be featured, published or draft'
-        }
-    },
-
-    distanceToAirport: {
-        type: String,
-        required: [true, 'Please enter your distance to airport'],
-    },
-
-    distanceToCityCentre: {
-        type: String,
-        required: [true, 'Please enter your distance to city centre'],
-    },
-
-    amenities: {
-        type: String,
-        required: [true, 'Please enter amenities'],
+            values: ['published', 'draft'],
+            message: 'property status can only either be published or draft'
+        },
+        lowercase: true,
+        default: 'draft'
     },
 
     slug: String,
+},
+{
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+}
+);
 
-    createdAt:{
-        type: Date,
-        default: Date.now()
-    },
-
-    updatedAt:{
-        type: Date,
-        default: Date.now()
-    },
-
-    deletedAt: Date
-});
+propertySchema.index({ location: '2dsphere' });
 
 
 const Property = mongoose.model('Property', propertySchema);

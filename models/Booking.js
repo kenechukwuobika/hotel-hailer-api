@@ -7,19 +7,20 @@ const bookingSchema = new mongoose.Schema({
     required: [true, 'Booking must have a property!']
   },
   
-  customer: {
+  user: {
     type: mongoose.Schema.ObjectId,
-    ref: 'Customer',
-    required: [true, 'Booking must belong to a customer!']
+    ref: 'User',
+    required: [true, 'Booking must belong to a user!']
   },
 
   paymentInterval: {
     type: String,
     required: [true, 'Booking must have a total amount!'],
     enum: {
-        values: ['hourly', 'weekly', 'bi-weekly', 'monthly', 'daily', 'full'],
-        message: 'paymentInterval can only either be hourly, daily, weekly, bi-weekly, monthly, or full'
-    }
+      values: ['hourly', 'weekly', 'bi-weekly', 'monthly', 'daily', 'full'],
+      message: 'paymentInterval can only either be hourly, daily, weekly, bi-weekly, monthly, or full'
+    },
+    lowercase: true
   },
   
   amountOnInterval: {
@@ -44,7 +45,8 @@ const bookingSchema = new mongoose.Schema({
     enum: {
         values: ['awaiting_payment', 'cancelled', 'failed', 'in_progress', 'hold', 'completed'],
         message: 'booking status can only either be awaiting_payment, cancelled, failed, in_progress, hold or completed'
-    }
+    },
+    lowercase: true
   },
 
   reference: String,
@@ -52,6 +54,7 @@ const bookingSchema = new mongoose.Schema({
   description: {
     type: String,
     required: [true, 'Booking must have a description!'],
+    lowercase: true
   },
 
   lastPaymentDate: {
@@ -71,35 +74,23 @@ const bookingSchema = new mongoose.Schema({
     required: [true, 'Booking must have a lodge start date!'],
   },
 
-  lodgeEndDate: {
-    type: Date,
-    required: [true, 'Booking must have a lodge end date!'],
-  },
+    lodgeEndDate: {
+        type: Date,
+        required: [true, 'Booking must have a lodge end date!'],
+    },
 
-  // lodgeRemainingDays: {
-  //   type: Number,
-  //   required: [true, 'Booking must have a lodge remaining days!'],
-  //   default: 2
-  // },
+    transactions: [
+        {
+            type: mongoose.Schema.ObjectId,
+            ref: 'Transaction'
+        }
+    ],
 
-  history: [Array],
-
-  createdAt: {
-    type: Date,
-    default: Date.now()
-  },
-
-  updatedAt: {
-    type: Date,
-    default: Date.now()
-  },
-
-  deletedAt: Date,
-  
 },
 {
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 bookingSchema.pre('save', async function(next){

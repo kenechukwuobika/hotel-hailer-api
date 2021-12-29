@@ -10,18 +10,6 @@ const Customer = User.discriminator('customer',
         exp_month: String,
         exp_year: String,
         bank: String,
-        emailVerified: {
-            type: Boolean,
-            default: false
-        },
-        emailVerifiedToken: {
-            type: String,
-            select: false
-        },
-        emailVerifiedat: {
-            type: String,
-            select: false
-        }
     })
 );
 

@@ -2,18 +2,12 @@ const express = require('express');
 
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
+const propertyRoute = require('../routes/propertyRoute');
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 router.use(authController.protect);
 
-router.get('/me', userController.getMe, userController.getUser);
-router.patch('/me', userController.uploadPhoto, userController.resizedPhoto, userController.updateMe);
-router.delete('/me', userController.deleteMe);
-
-
-
 router
-.use(authController.restrictTo('admin'))
 .route('/')
 .get(userController.getAllUsers)
 .post(userController.createUser);
@@ -21,8 +15,14 @@ router
 router
 .route('/:id')
 .get(userController.getUser)
-.patch(userController.updateUser)
-.delete(userController.deleteUser);
+.patch(authController.restrictTo('admin'), userController.updateUser)
+.delete(authController.restrictTo('admin'), userController.deleteUser);
+
+router.use('/:id/properties', userController.setOwnerIds, propertyRoute);
+router.use(authController.restrictTo('admin'));
+router.use('/:id/bookings', userController.setOwnerIds, propertyRoute);
+router.use('/:id/wallets', userController.setOwnerIds, propertyRoute);
+router.use('/:id/reviews', userController.setOwnerIds, propertyRoute);
 
 module.exports = router;
 

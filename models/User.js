@@ -1,23 +1,9 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
-const options = { discriminatorKey: 'role' };
-
 const userSchema = new mongoose.Schema({
-    firstName: {
-        type: String,
-        required: [true, 'Please enter your first name'],
-        lowercase: true,
-        minlength: [2, 'First name must be 2 characters or more'],
-    },
-
-    lastName: {
-        type: String,
-        required: [true, 'Please enter your first name'],
-        lowercase: true,
-        minlength: [2, 'Last name must be 2 characters or more'],
-    },
 
     userName: {
         type: String,
@@ -35,6 +21,42 @@ const userSchema = new mongoose.Schema({
         validate: [validator.isEmail, 'Please provide a valid email']
     },
 
+    role: {
+        type: String,
+        required: [true, 'Please select a role'],
+        default: 'customer',
+        enum: {
+            values: ['customer', 'vendor', 'admin'],
+            message: 'Role can only either be customer, vendor or admin'
+        }
+    },
+    
+    firstName: {
+        type: String,
+        lowercase: true,
+        minlength: [2, 'First name must be 2 characters or more'],
+    },
+
+    lastName: {
+        type: String,
+        lowercase: true,
+        minlength: [2, 'Last name must be 2 characters or more'],
+    },
+
+    paystack_customer_id: String,
+    
+    paystack_auth_code: String,
+    
+    card_type: String,
+    
+    last_4: String,
+    
+    exp_month: String,
+    
+    exp_year: String,
+    
+    bank: String,
+
     phoneNumber: {
         type: Number,
         required: [true, 'Please enter your phone number'],
@@ -47,6 +69,7 @@ const userSchema = new mongoose.Schema({
         minlength: [8, 'Password must be 8 characters or more'],
         select: false
     },
+    
     passwordConfirm: {
         type: String,
         required: [true, 'Please confirm your password'],
@@ -57,42 +80,32 @@ const userSchema = new mongoose.Schema({
             message: 'Passwords do not match'
         }
     },
-    passwordChangedAt: {
-        type: Date,
-        select: false
-    },
-    passwordResetExpireToken: {
-        type: String,
-        select: false
-    },
-    passwordResetExpiresAt: {
-        type: Date,
-        select: false
-    },
+    
+    passwordChangedAt: Date,
+
+    passwordResetExpireToken: String,
+
+    passwordResetExpiresAt: Date,
+
     image:{
         type: String,
         default: 'default.jpg'
     },
+
     slug: String,
-    wallet: {
-        type: Number,
-        default: 0
-    },
-    createdAt:{
-        type: Date,
-        default: Date.now()
-    },
-    updatedAt:{
-        type: Date,
-        default: Date.now()
-    },
-    deletedAt: Date,
-}, 
+
+    emailVerified: Boolean,
+
+    emailVerifiedToken: String,
+
+    emailVerifiedat: String,
+},
 {
+    timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
-  },
-options);
+}
+);
 
 userSchema.pre('save', async function(next){
     if(!this.isModified('password')) return next();
@@ -141,8 +154,31 @@ userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
   
     // False means NOT changed
     return false;
-  };
+};
 
+userSchema.methods.createEmailVerifyToken = function() {
+    const emailVerifiedToken = crypto.randomBytes(32).toString('hex');
+  
+    this.emailVerifiedToken = crypto
+    .createHash('sha256')
+    .update(emailVerifiedToken)
+    .digest('hex');
+      
+    return emailVerifiedToken;
+};
+
+userSchema.methods.createPasswordResetToken = function() {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+  
+    this.passwordResetExpireToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    
+    this.passwordResetExpiresAt = Date.now() + 10 * 60 * 1000;
+  
+    return resetToken;
+};
 
 const User = mongoose.model('User', userSchema);
 

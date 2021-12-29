@@ -4,8 +4,15 @@ const multer = require('multer');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
 const factory = require('./factory');
-const catchAysnc = require('../utilities/catchAsync');
+const catchAsync = require('../utilities/catchAsync');
 const AppException = require('../utilities/AppException');
+
+exports.setOwnerIds = catchAsync(async (req, res, next) => {
+    req.body.owner = req.user._id;
+    req.filter = { owner: req.user._id };
+    req.params.id = req.user._id;
+    next();
+})
 
 exports.getAllUsers = factory.getDocuments(User);
 exports.createUser = factory.createDocument(User);
@@ -63,16 +70,11 @@ const filterObj = (object, ...options) => {
 }
 
 exports.getMe = (req, res, next) => {
-    req.params.id = req.user.id;
+    req.params.id = req.user._id;
     next();
 };
 
-exports.setVendorId = (req, res, next) => {
-    req.vendor = req.user.id;
-    next();
-};
-
-exports.updateMe = catchAysnc(async (req, res, next) => {
+exports.updateMe = catchAsync(async (req, res, next) => {
     if(req.body.password){
         console.log('You cannot update your password with this route')
         return next();
@@ -90,9 +92,30 @@ exports.updateMe = catchAysnc(async (req, res, next) => {
     next();
 });
 
-exports.deleteMe = catchAysnc(async (req, res, next) => {
+exports.updatePassword = catchAsync(async (req, res, next) => {
+    // 1) Get user from collection
+    const user = await User.findById(req.user._id).select('+password');
+  
+    // 2) Check if POSTed current password is correct
+    if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+      return next(new AppException(401, 'Your current password is wrong.'));
+    }
+  
+    // 3) If so, update password
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    await user.save();
+    // User.findByIdAndUpdate will NOT work as intended!
+  
+    res.status(200).json({
+        status: "success",
+        message: "User password updated sucessfully"
+    })
+});
 
-    const user = await User.findByIdAndUpdate(req.user.id, {deletedAt: Date.now()})
+exports.deleteMe = catchAsync(async (req, res, next) => {
+
+    const user = await User.findByIdAndDelete(req.user.id)
 
     res.status(200).json({
         status: 'success',

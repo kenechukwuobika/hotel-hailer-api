@@ -1,4 +1,3 @@
-// review / rating / createdAt / ref to property / ref to user
 const mongoose = require('mongoose');
 const Property = require('./Property');
 
@@ -6,7 +5,8 @@ const reviewSchema = new mongoose.Schema(
   {
     text: {
       type: String,
-      required: [true, 'Review can not be empty!']
+      required: [true, 'Review can not be empty!'],
+      lowercase: true
     },
     rating: {
       type: Number,
@@ -29,6 +29,7 @@ const reviewSchema = new mongoose.Schema(
     }
   },
   {
+    timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
   }
