@@ -9,12 +9,12 @@ router.use(authController.protect);
 
 router
 .route('/')
-.get(userController.getAllUsers)
-.post(userController.createUser);
+.get(authController.restrictTo('admin'), userController.getAllUsers)
+.post(authController.restrictTo('admin'), userController.createUser);
 
 router
 .route('/:id')
-.get(userController.getUser)
+.get(authController.restrictTo('admin'), userController.getUser)
 .patch(authController.restrictTo('admin'), userController.updateUser)
 .delete(authController.restrictTo('admin'), userController.deleteUser);
 
