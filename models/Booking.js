@@ -15,7 +15,7 @@ const bookingSchema = new mongoose.Schema({
 
   paymentInterval: {
     type: String,
-    required: [true, 'Booking must have a total amount!'],
+    required: [true, 'Booking must have a payment interval!'],
     enum: {
       values: ['hourly', 'weekly', 'bi-weekly', 'monthly', 'daily', 'full'],
       message: 'paymentInterval can only either be hourly, daily, weekly, bi-weekly, monthly, or full'
@@ -53,7 +53,6 @@ const bookingSchema = new mongoose.Schema({
 
   description: {
     type: String,
-    required: [true, 'Booking must have a description!'],
     lowercase: true
   },
 

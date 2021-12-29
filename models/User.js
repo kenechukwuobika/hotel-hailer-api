@@ -94,7 +94,10 @@ const userSchema = new mongoose.Schema({
 
     slug: String,
 
-    emailVerified: Boolean,
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
 
     emailVerifiedToken: String,
 

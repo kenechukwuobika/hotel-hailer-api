@@ -10,7 +10,12 @@ const handleValidationError =  error => {
 }
 
 const handleUniqueError =  error => {
-    console.log(error)
+    const keyValues = Object.keys(error.keyValue);
+    if(keyValues.includes('property') && keyValues.includes('user')){
+        return (new AppException(400, `Sorry you have already submitted a review on this property`));
+    }
+
+    // (error)
     return (new AppException(400, `this ${Object.keys(error.keyValue)} is already being used by another customer`));
 }
 

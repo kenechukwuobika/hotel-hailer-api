@@ -43,7 +43,7 @@ exports.getDocument = (Model, populateOption) => catchAsync(async (req, res, nex
     }
     res.status(200).json({
         status: 'success',
-        [key]: document,
+        data: document,
     });
 })
 
@@ -63,7 +63,7 @@ exports.updateDocument = Model => catchAsync(async (req, res, next) => {
 
     res.status(200).json({
         status: 'success',
-        [key]: document,
+        data: document,
     });
 })
 
