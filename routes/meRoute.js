@@ -17,9 +17,9 @@ router
 .delete(userController.getMe, userController.deleteMe)
 
 router.route('/update_password').put(userController.updatePassword);
-router.use('/properties', userController.setOwnerIds, propertyRoute);
+router.use('/properties', userController.setVendorId(), propertyRoute);
 router.use('/bookings', bookingRoute);
-router.use('/wallets', userController.setOwnerIds, walletRoute);
+router.use('/wallets', userController.setVendorId(), walletRoute);
 
 module.exports = router;
 

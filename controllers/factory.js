@@ -48,18 +48,18 @@ exports.getDocument = (Model, populateOption) => catchAsync(async (req, res, nex
 })
 
 exports.updateDocument = Model => catchAsync(async (req, res, next) => {
-    const key = Model.modelName.toLowerCase();
-    
-    // if(!req.filter.owner && req.user.role !== 'admin'){
-    //     return next(new AppException(404, `${key} not found`))
-    // }
-    
+    const key = Model.modelName;
+    const filter = {...req.filter, _id: req.params.id}
     req.body.updatedAt = Date.now();
     
-    const document = await Model.findByIdAndUpdate(req.params.id, req.body, {
+    const document = await Model.findOneAndUpdate(filter, req.body, {
         new: true,
         runValidators: true
     });
+
+    if(!document){
+        return next(new AppException(404, `${key} not found`))
+    }
 
     res.status(200).json({
         status: 'success',

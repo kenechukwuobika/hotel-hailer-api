@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const perkSchema = new mongoose.Schema({
+const amenitySchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please enter a name'],
@@ -16,12 +16,12 @@ const perkSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-perkSchema.virtual('properties', {
+amenitySchema.virtual('properties', {
     ref: 'Property',
     foreignField: 'category',
     localField: '_id'
 });
 
-const Perk = mongoose.model('Perk', perkSchema);
+const Amenity = mongoose.model('Amenity', amenitySchema);
 
-module.exports = Perk;
+module.exports = Amenity;

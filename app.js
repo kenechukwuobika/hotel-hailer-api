@@ -10,7 +10,7 @@ const reviewRoute = require('./routes/reviewRoute');
 const bookingRoute = require('./routes/bookingRoute');
 const tagRoute = require('./routes/tagRoute');
 const categoryRoute = require('./routes/categoryRoute');
-const perkRoute = require('./routes/perkRoute');
+const amenityRoute = require('./routes/amenityRoute');
 const transactionRoute = require('./routes/transactionRoute');
 const walletRoute = require('./routes/walletRoute');
 const AppException = require('./utilities/AppException');
@@ -34,7 +34,7 @@ app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/bookings', bookingRoute);
 app.use('/api/v1/tags', tagRoute);
 app.use('/api/v1/categories', categoryRoute);
-app.use('/api/v1/perks', perkRoute);
+app.use('/api/v1/amenities', amenityRoute);
 app.use('/api/v1/transactions', transactionRoute);
 app.use('/api/v1/wallets', walletRoute);
 

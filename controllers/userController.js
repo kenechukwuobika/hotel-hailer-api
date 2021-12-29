@@ -7,10 +7,33 @@ const factory = require('./factory');
 const catchAsync = require('../utilities/catchAsync');
 const AppException = require('../utilities/AppException');
 
-exports.setOwnerIds = catchAsync(async (req, res, next) => {
-    req.body.owner = req.user._id;
-    req.filter = { owner: req.user._id };
-    req.params.id = req.user._id;
+exports.setVendorId = (type = 'params') => catchAsync(async (req, res, next) => {
+    if(req.user && req.user.role === 'vendor'){
+        if(type === 'body'){
+            req.body.vendor = req.user._id;
+        }
+        else if(type === 'filter'){
+            const filter = req.filter ? {...req.filter} : {};
+            req.filter = { ...filter, vendor: req.user._id };
+        }
+        else{
+            req.params.id = req.user._id;
+        }
+    }
+    next();
+})
+
+exports.setUserId = (type = 'params') => catchAsync(async (req, res, next) => {
+    if(type === 'body'){
+        req.body.user = req.user._id;
+    }
+    else if(type === 'filter'){
+        const filter = req.filter ? {...req.filter} : {};
+        req.filter = { ...filter, user: req.user._id };
+    }
+    else{
+        req.params.id = req.user._id;
+    }
     next();
 })
 

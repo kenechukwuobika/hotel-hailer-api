@@ -25,6 +25,6 @@ AmenitySchema.virtual('properties', {
     localField: '_id'
 });
 
-const Perk = mongoose.model('Perk', AmenitySchema);
+const Amenity = mongoose.model('Amenity', AmenitySchema);
 
-module.exports = Perk;
+module.exports = Amenity;

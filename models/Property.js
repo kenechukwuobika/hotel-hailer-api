@@ -13,7 +13,7 @@ const propertySchema = new mongoose.Schema({
         required: [true, 'Please enter unit price'],
     },
 
-    owner: {
+    vendor: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',
     },
@@ -75,9 +75,9 @@ const propertySchema = new mongoose.Schema({
         required: [true, 'Please enter a short description'],
     },
 
-    perks: {
+    amenities: {
         type: Array,
-        required: [true, 'Please enter perks'],
+        required: [true, 'Please enter amenities'],
     },
 
     amenities: [

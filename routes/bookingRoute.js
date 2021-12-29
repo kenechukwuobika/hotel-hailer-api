@@ -2,24 +2,25 @@ const express = require('express');
 
 const authController = require('../controllers/authController');
 const bookingController = require('../controllers/bookingController');
+const userController = require('../controllers/userController');
 
 const router = express.Router();
 router.post('/transationWebhook', bookingController.transactionWebhook);
 
 router.post('/initialize/:properyId', bookingController.initializeTransation);
 router.post('/verify', bookingController.verifyTransation);
+router.use(authController.protect)
 
 router
-.use(authController.protect, authController.restrictTo('admin'))
 .route('/')
-.get(bookingController.getAllBookings)
-.post(bookingController.createBooking);
+.get(userController.setUserId('filter'), bookingController.getAllBookings)
+.post(authController.restrictTo('admin'), bookingController.createBooking);
 
 router
 .route('/:id')
-.get(bookingController.getBooking)
-.patch(bookingController.updateBooking)
-.delete(bookingController.deleteBooking);
+.get(userController.setUserId('filter'), bookingController.getBooking)
+.patch(authController.restrictTo('admin'), bookingController.updateBooking)
+.delete(authController.restrictTo('admin'), bookingController.deleteBooking);
 
 module.exports = router;
 

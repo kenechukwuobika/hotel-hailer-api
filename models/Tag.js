@@ -16,6 +16,6 @@ const tagSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-const Perk = mongoose.model('Tag', tagSchema);
+const Amenity = mongoose.model('Tag', tagSchema);
 
-module.exports = Perk;
+module.exports = Amenity;
