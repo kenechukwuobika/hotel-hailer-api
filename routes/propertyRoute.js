@@ -20,7 +20,7 @@ router
 .patch(authController.protect, authController.restrictTo('admin', 'vendor'), userController.setVendorId('filter'), propertyController.updateProperty)
 .delete(authController.protect, authController.restrictTo('admin', 'vendor'), propertyController.deleteProperty);
 
-router.use('/reviews', userController.setVendorId(), reviewRoute);
+router.use('/:id/reviews', userController.setVendorId(), reviewRoute);
 
 module.exports = router;
 
