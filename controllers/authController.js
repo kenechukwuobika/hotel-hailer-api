@@ -161,7 +161,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 	  await user.save({ validateBeforeSave: false });
   
 	  return next(
-		new AppException(500, 'There was an error sending the email. Try again later!'));
+		new AppException(500, 'There was an error sending the email. Please try again later!'));
 	}
 });
   
