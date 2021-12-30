@@ -171,7 +171,7 @@ userSchema.methods.createEmailVerifyToken = function() {
 };
 
 userSchema.methods.createPasswordResetToken = function() {
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetToken = crypto.randomBytes(4).toString('hex');
   
     this.passwordResetExpireToken = crypto
       .createHash('sha256')
