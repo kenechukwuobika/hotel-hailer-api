@@ -5,11 +5,11 @@ const bookingController = require('../controllers/bookingController');
 const userController = require('../controllers/userController');
 
 const router = express.Router();
-router.post('/transationWebhook', bookingController.transactionWebhook);
 
+router.use(authController.protect)
+router.post('/transationWebhook', bookingController.transactionWebhook);
 router.post('/initialize/:properyId', bookingController.initializeTransation);
 router.post('/verify', bookingController.verifyTransation);
-router.use(authController.protect)
 
 router
 .route('/')

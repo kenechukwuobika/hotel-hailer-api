@@ -24,6 +24,7 @@ exports.getDocuments = (Model, populateOption) => catchAsync(async(req, res, nex
 })
 
 exports.createDocument = Model => catchAsync(async (req, res, next) => {
+    console.log(req.body)
     const document = await Model.create(req.body);
     const key = Model.modelName.toLowerCase();
     res.status(201).json({
