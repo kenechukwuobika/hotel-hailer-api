@@ -78,12 +78,31 @@ const bookingSchema = new mongoose.Schema({
         required: [true, 'Booking must have a lodge end date!'],
     },
 
-    transactions: [
-        {
-            type: mongoose.Schema.ObjectId,
-            ref: 'Transaction'
-        }
-    ],
+    // transactions: [
+    //     {
+    //         type: mongoose.Schema.ObjectId,
+    //         ref: 'Transaction'
+    //     }
+    // ],
+
+	history: [{
+        amount: Number,
+        date: Date,
+		status: {
+			type: String,
+			required: [true, 'Booking must have a status!'],
+			enum: {
+				values: ['failed', 'successful'],
+				message: 'booking status can only either be successful or failed'
+			},
+			lowercase: true
+		}
+    }],
+
+	failedAttempts: {
+		type: Number,
+		default: 0
+	}
 
 },
 {

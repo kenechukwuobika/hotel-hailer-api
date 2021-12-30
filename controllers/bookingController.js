@@ -4,9 +4,9 @@ const axios = require('axios');
 const cron = require('node-cron');
 
 const Booking = require('../models/Booking');
-const Customer = require('../models/Customer');
 const User = require('../models/User');
 const Property = require('../models/Property');
+const Transaction = require('../models/Transaction');
 const Email = require('./emailController');
 const factory = require('./factory');
 const catchAsync = require('../utilities/catchAsync');
@@ -50,13 +50,23 @@ const calcNextPaymentDate = (interval) => {
 
 }
 
+const monthDiff = (d1, d2) => {
+  var months;
+  months = (d2.getFullYear() - d1.getFullYear()) * 12;
+  months -= d1.getMonth();
+  months += d2.getMonth();
+  date = d1.getDay() - d2.getDay();
+  console.log(date)
+  return months <= 0 ? 0 : months;
+}
+
 exports.initializeTransation = catchAsync( async (req, res, next) => {
 
   const property = await Property.findById(req.params.properyId);
   
   const totalAmount = property.unitPrice;
 
-  const customer = req.user;
+  const user = req.user;
 
   const {
     paymentInterval,
@@ -68,7 +78,7 @@ exports.initializeTransation = catchAsync( async (req, res, next) => {
   
   const booking = await Booking.create({
     property,
-    customer,
+    user,
     paymentInterval,
     amountOnInterval,
     totalAmount,
@@ -140,17 +150,17 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
     });
     response.on('end', async () => {
       const result = JSON.parse(data);
-      if(result.status === 'success'){
+      console.log(result)
+      const booking = await Booking.findById(result.data.metadata.booking);
+      if(result.status === true){
 
-        console.log(result);
-        const booking = await Booking.findById(result.data.metadata.booking);
         booking.totalAmountPaid += result.data.amount * 1/100;
         booking.status = booking.totalAmountPaid < booking.totalAmount ? 'inprogress' : 'completed';
         booking.lastPaymentDate = Date.now();
         booking.nextPaymentDate = calcNextPaymentDate(booking.paymentInterval);
         booking.reference = result.data.reference;
 
-        booking.history.push({date: Date.now(), amountPaid: result.data.amount * 1/100, status: 'success'});
+        booking.history.push({date: Date.now(), amount: result.data.amount * 1/100, status: 'successful'});
 
         await booking.save({
           validateBeforeSave: false
@@ -158,7 +168,6 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
 
         sendResponse(res, 200, result);
       }
-
       else{
         console.log(result.message);
         return next(new AppException(404, 'booking failed, please try again'));

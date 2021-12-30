@@ -4,7 +4,6 @@ const AppException = require('../utilities/AppException');
 
 exports.getDocuments = (Model, populateOption) => catchAsync(async(req, res, next) => {
     let query = Model.find(req.filter);
-    console.log(populateOption)
     if(populateOption){
         query = query.populate(populateOption);
     }
@@ -24,7 +23,6 @@ exports.getDocuments = (Model, populateOption) => catchAsync(async(req, res, nex
 })
 
 exports.createDocument = Model => catchAsync(async (req, res, next) => {
-    console.log(req.body)
     const document = await Model.create(req.body);
     const key = Model.modelName.toLowerCase();
     res.status(201).json({
@@ -37,7 +35,6 @@ exports.getDocument = (Model, populateOption) => catchAsync(async (req, res, nex
     const filter = {...req.filter, _id: req.params.id}
     let query = Model.findOne(filter).select('-__v');
     const key = Model.modelName.toLowerCase();
-    console.log(populateOption)
     if(populateOption){
         query = query.populate(populateOption);
     }
