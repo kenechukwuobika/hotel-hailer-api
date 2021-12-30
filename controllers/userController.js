@@ -7,7 +7,7 @@ const factory = require('./factory');
 const catchAsync = require('../utilities/catchAsync');
 const AppException = require('../utilities/AppException');
 
-exports.setVendorId = (type = 'params') => catchAsync(async (req, res, next) => {
+exports.setVendorId = (type = 'filter') => catchAsync(async (req, res, next) => {
     if(req.user && req.user.role === 'vendor'){
         if(type === 'body'){
             req.body.vendor = req.user._id;
@@ -23,7 +23,7 @@ exports.setVendorId = (type = 'params') => catchAsync(async (req, res, next) => 
     next();
 })
 
-exports.setUserId = (type = 'params') => catchAsync(async (req, res, next) => {
+exports.setUserId = (type = 'filter') => catchAsync(async (req, res, next) => {
     if(req.user && req.user.role !== 'admin'){
         if(type === 'body'){
             req.body.user = req.user._id;
