@@ -13,9 +13,9 @@ const categoryRoute = require('./routes/categoryRoute');
 const amenityRoute = require('./routes/amenityRoute');
 const transactionRoute = require('./routes/transactionRoute');
 const walletRoute = require('./routes/walletRoute');
+const notificationRoute = require('./routes/notificationRoute');
 const AppException = require('./utilities/AppException');
 const globalErrorHandler = require('./controllers/errorController');
-const authController = require('./controllers/authController');
 
 const app = express();
 
@@ -37,6 +37,7 @@ app.use('/api/v1/categories', categoryRoute);
 app.use('/api/v1/amenities', amenityRoute);
 app.use('/api/v1/transactions', transactionRoute);
 app.use('/api/v1/wallets', walletRoute);
+app.use('/api/v1/notifications', notificationRoute);
 
 app.all('*', ( req, res, next) => {
     next(new AppException(404, `Route not found`))

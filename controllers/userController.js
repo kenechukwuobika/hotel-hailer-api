@@ -24,15 +24,17 @@ exports.setVendorId = (type = 'params') => catchAsync(async (req, res, next) => 
 })
 
 exports.setUserId = (type = 'params') => catchAsync(async (req, res, next) => {
-    if(type === 'body'){
-        req.body.user = req.user._id;
-    }
-    else if(type === 'filter'){
-        const filter = req.filter ? {...req.filter} : {};
-        req.filter = { ...filter, user: req.user._id };
-    }
-    else{
-        req.params.id = req.user._id;
+    if(req.user && req.user.role !== 'admin'){
+        if(type === 'body'){
+            req.body.user = req.user._id;
+        }
+        else if(type === 'filter'){
+            const filter = req.filter ? {...req.filter} : {};
+            req.filter = { ...filter, user: req.user._id };
+        }
+        else{
+            req.params.id = req.user._id;
+        }
     }
     next();
 })

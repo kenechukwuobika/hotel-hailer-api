@@ -10,7 +10,7 @@ router.use(authController.protect);
 router
 .route('/')
 .get(amenityController.getAllAmenities)
-.post( amenityController.createAmenity);
+.post(authController.restrictTo('admin'), amenityController.createAmenity);
 
 router
 .route('/:id')

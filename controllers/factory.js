@@ -2,8 +2,12 @@ const catchAsync = require('../utilities/catchAsync');
 const ApiFeatures = require('../utilities/ApiFeatures');
 const AppException = require('../utilities/AppException');
 
-exports.getDocuments = Model => catchAsync(async(req, res, next) => {
-    const query = Model.find(req.filter);
+exports.getDocuments = (Model, populateOption) => catchAsync(async(req, res, next) => {
+    let query = Model.find(req.filter);
+    console.log(populateOption)
+    if(populateOption){
+        query = query.populate(populateOption);
+    }
     const documents = 
     await new ApiFeatures(query, req)
     .filter()
@@ -29,10 +33,10 @@ exports.createDocument = Model => catchAsync(async (req, res, next) => {
 })
 
 exports.getDocument = (Model, populateOption) => catchAsync(async (req, res, next) => {
-    // let query = Model.findById(req.params.id).select('-__v');
     const filter = {...req.filter, _id: req.params.id}
     let query = Model.findOne(filter).select('-__v');
     const key = Model.modelName.toLowerCase();
+    console.log(populateOption)
     if(populateOption){
         query = query.populate(populateOption);
     }
