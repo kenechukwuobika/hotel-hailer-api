@@ -39,9 +39,10 @@ exports.getDistances = catchAsync(async (req, res, next) => {
           distance: 1,
           name: 1,
           unitPrice: 1,
-          images:1,
           location: 1,
-          state: 1
+          state: 1,
+          coverImage: 1,
+          unit: 'km'
         }
       }
     ]);

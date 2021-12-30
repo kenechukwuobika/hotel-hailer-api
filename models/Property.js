@@ -66,6 +66,11 @@ const propertySchema = new mongoose.Schema({
         lowercase: true
     },
 
+    coverImage: {
+        type: String,
+        required: [true, 'Please upload a cover image'],
+    },
+
     images: [String],
 
     videos: [String],
