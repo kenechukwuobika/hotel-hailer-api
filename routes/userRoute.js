@@ -14,8 +14,8 @@ router
 router
 .route('/:id')
 .get(userController.getUser)
-.patch(authController.restrictTo('admin'), userController.updateUser)
-.delete(authController.restrictTo('admin'), userController.deleteUser);
+.patch(authController.protect, authController.restrictTo('admin'), userController.updateUser)
+.delete(authController.protect, authController.restrictTo('admin'), userController.deleteUser);
 
 router.use('/:id/properties', userController.setVendorId(), propertyRoute);
 router.use('/:id/bookings', userController.setVendorId(), propertyRoute);
