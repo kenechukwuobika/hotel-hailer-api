@@ -38,7 +38,7 @@ router
     propertyController.deleteProperty
 );
 
-router.use('/:id/reviews', userController.setVendorId(), reviewRoute);
+router.use('/:id/reviews', propertyController.setPropertyId(), reviewRoute);
 
 module.exports = router;
 

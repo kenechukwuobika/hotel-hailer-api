@@ -63,6 +63,20 @@ exports.uploadPhotos = upload.fields([
   {name:'images', maxCount: 5 }
 ]);
 
+exports.setPropertyId = (type = 'filter') => catchAsync(async (req, res, next) => {
+    console.log(req.params.id)
+    if(req.user && req.user.role === 'vendor'){
+        if(type === 'body'){
+            req.body.vendor = req.user._id;
+        }
+        else{
+            const filter = req.filter ? {...req.filter} : {};
+            req.filter = { ...filter, property: req.params.id };
+        }
+    }
+    next();
+})
+
 exports.getAllProperties = factory.getDocuments(Property);
 exports.createProperty = factory.createDocument(Property);
 exports.getProperty = factory.getDocument(Property);
