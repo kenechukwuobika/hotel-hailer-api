@@ -27,7 +27,7 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
-  console.log(req.body)
+    if(req.vendor.role === 'admin') return next(new AppException(400, 'Sorry, you can\'t signup as an admin'))
     const newUser = await User.create({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
