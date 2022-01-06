@@ -89,7 +89,7 @@ const userSchema = new mongoose.Schema({
 
     image:{
         type: String,
-        default: 'default.jpg'
+        default: 'https://hotelappartments.herokuapp.com/images/users/default.jpg'
     },
 
     slug: String,
