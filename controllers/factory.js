@@ -34,9 +34,12 @@ exports.createDocument = Model => catchAsync(async (req, res, next) => {
         req.body.coverImage = `${req.protocol}://${req.get('host')}/images/products/${req.files.images[0].filename}`;
         const filenames = req.files.images.map(file => `${req.protocol}://${req.get('host')}/images/products/${file.filename}`)
         req.body.images = filenames;
-    }else{
-        req.body.images = [];
     }
+
+    if(req.file) {
+        req.body.image = `${req.protocol}://${req.get('host')}/images/users/${req.file.filename}`;
+    }
+
 
     const document = await Model.create(req.body);
     const key = Model.modelName.toLowerCase();

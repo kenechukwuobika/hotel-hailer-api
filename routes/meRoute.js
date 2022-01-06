@@ -13,7 +13,12 @@ router.use(authController.protect);
 router
 .route('/')
 .get(userController.getMe, userController.getUser)
-.patch(userController.uploadPhoto, userController.resizedPhoto, userController.getMe, userController.updateMe)
+.patch(
+    userController.uploadPhoto, 
+    userController.resizedPhoto, 
+    userController.getMe, 
+    userController.updateMe
+)
 .delete(userController.getMe, userController.deleteMe)
 
 router.route('/update_password').put(userController.updatePassword);

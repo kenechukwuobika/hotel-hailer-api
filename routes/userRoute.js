@@ -9,12 +9,24 @@ const router = express.Router({ mergeParams: true });
 router
 .route('/')
 .get(authController.protect, authController.restrictTo('admin'), userController.getAllUsers)
-.post(authController.protect, authController.restrictTo('admin'), userController.createUser);
+.post(
+    authController.protect, 
+    authController.restrictTo('admin'), 
+    userController.uploadPhoto,
+    userController.resizedPhoto,
+    userController.createUser
+);
 
 router
 .route('/:id')
 .get(userController.getUser)
-.patch(authController.protect, authController.restrictTo('admin'), userController.updateUser)
+.patch(
+    authController.protect, 
+    authController.restrictTo('admin'),
+    userController.uploadPhoto,
+    userController.resizedPhoto,
+    userController.updateUser
+)
 .delete(authController.protect, authController.restrictTo('admin'), userController.deleteUser);
 
 router.use('/:id/properties', userController.setVendorId(), propertyRoute);

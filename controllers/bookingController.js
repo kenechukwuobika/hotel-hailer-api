@@ -64,6 +64,10 @@ const monthDiff = (d1, d2) => {
 exports.initializeTransation = catchAsync( async (req, res, next) => {
  
   const property = await Property.findById(req.params.properyId);
+
+  if(!property){
+    return next(new AppException(401, "Property not found"))
+  }
   
   const totalAmount = property.unitPrice;
 

@@ -69,8 +69,8 @@ const upload = multer({
 
 exports.resizedPhoto = (req, res, next) => {
   if(!req.file) return next();
-  req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
-  
+  const mimeType = req.file.mimetype.split('/')[1];  
+  req.file.filename = `user-${req.user.id}.${mimeType}`;
   sharp(req.file.buffer)
   .resize(500, 500)
   .toFormat('jpeg')
@@ -105,6 +105,9 @@ exports.updateMe = catchAsync(async (req, res, next) => {
         console.log('You cannot update your password with this route')
         return next();
     }
+    if(req.file) {
+        req.body.image = `${req.protocol}://${req.get('host')}/images/users/${req.file.filename}`;
+    }
     const filterdBody = filterObj(req.body, 'firstName', 'lastName', 'email', 'phoneNumber', 'image')
     const user = await User.findByIdAndUpdate(req.user.id, filterdBody, {
         new: true,
@@ -113,18 +116,17 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 
     const bookings = await Booking.find({
         user: user._id,
-        status: 'inprogress'
+        status: 'in_progress'
     })
 
-    if(bookings){
+    if(bookings.length !== 0){
         return next(new AppException(401, 'You cannot update your profile if you have an active booking.'));
     }
 
-    res.status(201).json({
+    res.status(200).json({
         status: 'success',
         data: user,
     });
-    next();
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
