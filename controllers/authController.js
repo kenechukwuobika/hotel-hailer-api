@@ -7,6 +7,7 @@ const Wallet = require('../models/Wallet');
 const catchAsync = require('../utilities/catchAsync');
 const AppException = require('../utilities/AppException');
 const Email = require('./emailController');
+const notificationController = require('./notificationController');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -25,7 +26,7 @@ const createSendToken = (user, statusCode, res) => {
     });
 };
 
-exports.signup = catchAsync(async (req, res, next) => {
+exports.signup = io => catchAsync(async (req, res, next) => {
     const newUser = await User.create({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
@@ -37,15 +38,18 @@ exports.signup = catchAsync(async (req, res, next) => {
     });
 
     if(newUser.role === 'vendor'){
-      await Wallet.create({
+      const wallet = await Wallet.create({
         vendor: newUser._id
       })
+
+      if(!wallet) return next(new AppException(404, `Could not create wallet for user with id: ${newUser._id}}`));
     }
+    
+    notificationController.notify(newUser._id, 'Your account has been created');
   
     const url = `${req.protocol}://${req.get('host')}/me`;
     const email = new Email(newUser, url);
-    // await email.sendWelcome();
-  
+    await email.sendWelcome();
     createSendToken(newUser, 201, res);
 });
 
@@ -136,33 +140,31 @@ exports.restrictTo = (...roles) => {
 exports.forgotPassword = catchAsync(async (req, res, next) => {
 	// 1) Get user based on POSTed email
 	const user = await User.findOne({ email: req.body.email });
-	if (!user) {
-	  return next(new AppException(404, 'There is no user with email address.'));
+	if (user) {
+    
+    // 2) Generate the random reset token
+    const resetToken = user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+    
+    try {
+      const email = new Email(user, '', resetToken);
+      await email.sendReset();
+    } catch (err) {
+      console.log(err)
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+    
+      return next(
+      new AppException(500, 'There was an error sending the email. Please try again later!'));
+    }
 	}
-  
-	// 2) Generate the random reset token
-	const resetToken = user.createPasswordResetToken();
-	await user.save({ validateBeforeSave: false });
-  
-	// 3) Send it to user's email
-	const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
-  
-	try {
-	  const email = new Email(user, '', resetToken);
-	  await email.sendReset();
-	  res.status(200).json({
-      status: 'success',
-      message: 'Token sent to email!'
-	  });
-	} catch (err) {
-    console.log(err)
-	  user.passwordResetToken = undefined;
-	  user.passwordResetExpires = undefined;
-	  await user.save({ validateBeforeSave: false });
-  
-	  return next(
-		new AppException(500, 'There was an error sending the email. Please try again later!'));
-	}
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Token sent to email!'
+  });
+
 });
   
 exports.resetPassword = catchAsync(async (req, res, next) => {
@@ -177,6 +179,8 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 		passwordResetExpiresAt: { $gt: Date.now() }
 	});
 
+console.log(req.body.token)
+console.log(hashedToken)
 	// 2) If token has not expired, and there is user, set the new password
 	if (!user) {
 		return next(new AppException(400, 'Token is invalid or has expired'));
@@ -189,6 +193,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
 	// 3) Update changedPasswordAt property for the user
 	// 4) Log the user in, send JWT
+  notificationController.notify(user._id, 'You successfully reset your password');
 	createSendToken(user, 200, res);
 });
 

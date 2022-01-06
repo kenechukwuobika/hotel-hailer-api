@@ -8,6 +8,8 @@ const router = express.Router();
 
 router.use(authController.protect);
 
+router.get('/markAsRead', notificationController.markAsRead)
+
 router
 .route('/')
 .get(userController.setUserId(), notificationController.getAllNotifications)

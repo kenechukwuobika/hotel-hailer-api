@@ -3,3 +3,4 @@ config.env
 *copy*
 *.zip
 *.yml
+*data/

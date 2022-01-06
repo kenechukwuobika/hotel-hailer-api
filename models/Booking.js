@@ -93,7 +93,7 @@ const bookingSchema = new mongoose.Schema({
 			required: [true, 'Booking must have a status!'],
 			enum: {
 				values: ['failed', 'successful'],
-				message: 'booking status can only either be successful or failed'
+				message: 'booking status can only either be failed or successful'
 			},
 			lowercase: true
 		}

@@ -1,6 +1,67 @@
+const crypto = require('crypto');
+const sharp = require('sharp');
+const multer = require('multer');
 const Property = require('../models/Property');
 const factory = require('./factory');
 const catchAsync = require('../utilities/catchAsync');
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if(!file.mimetype.startsWith('image')){
+    cb(new AppException(400, 'please upload a valid image file'), false)
+  }
+
+  cb(null, true);
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter
+});
+
+exports.resizedPhoto = (req, res, next) => {
+  try {
+    console.log(req.files)
+    if(req.files && Object.keys(req.files).length !== 0){
+        // if(req.files.coverImage){
+        //     const coverImage = req.files.coverImage[0];
+        //     const mimeType = coverImage.mimetype.split('/')[1];
+        //     coverImage.filename = `product-${req.body.vendor}-${Date.now()}.${mimeType}`;
+        //     sharp(coverImage.buffer)
+        //     .resize(500, 500)
+        //     .toFormat('jpeg')
+        //     .jpeg({ quality: 90 })
+        //     .toFile(`public/images/products/${coverImage.filename}`);
+      
+        // }
+    
+        if(req.files.images){
+            req.files.images.forEach((file, index) => {
+            //   file.filename = `product-${req.body.vendor}-${Date.now()}.jpeg`;
+            const mimeType = file.mimetype.split('/')[1];  
+            file.filename = `${crypto.randomBytes(32).toString('hex')}.${mimeType}`;
+            
+              sharp(file.buffer)
+              .resize(500, 500)
+              .toFormat('jpeg')
+              .jpeg({ quality: 90 })
+              .toFile(`public/images/products/${file.filename}`);
+            })
+        
+        }
+      }
+  } catch (error) {
+      console.log(error)
+  }
+
+  return next();
+}
+
+exports.uploadPhotos = upload.fields([
+  {name:'coverImage', maxCount: 1 },
+  {name:'images', maxCount: 5 }
+]);
 
 exports.getAllProperties = factory.getDocuments(Property);
 exports.createProperty = factory.createDocument(Property);

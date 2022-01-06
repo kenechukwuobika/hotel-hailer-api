@@ -1,5 +1,5 @@
-module.exports = (res, status, data) => {
-  res.status(200).json({
+module.exports = (res, status=200, data) => {
+  res.status(status).json({
     ...data
   });
 }

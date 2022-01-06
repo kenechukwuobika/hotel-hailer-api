@@ -6,6 +6,7 @@ const Customer = require('../models/Customer');
 const factory = require('./factory');
 const catchAsync = require('../utilities/catchAsync');
 const AppException = require('../utilities/AppException');
+const Booking = require('../models/Booking');
 
 exports.setVendorId = (type = 'filter') => catchAsync(async (req, res, next) => {
     if(req.user && req.user.role === 'vendor'){
@@ -74,12 +75,12 @@ exports.resizedPhoto = (req, res, next) => {
   .resize(500, 500)
   .toFormat('jpeg')
   .jpeg({ quality: 90 })
-  .toFile(`public/img/users/${req.file.filename}`);
+  .toFile(`public/images/users/${req.file.filename}`);
 
   next(); 
 }
 
-// const upload = multer({ dest: 'public/img/users' });
+// const upload = multer({ dest: 'public/images/users' });
 
 exports.uploadPhoto = upload.single('image');
 
@@ -109,6 +110,15 @@ exports.updateMe = catchAsync(async (req, res, next) => {
         new: true,
         runValidators: true
     });
+
+    const bookings = await Booking.find({
+        user: user._id,
+        status: 'inprogress'
+    })
+
+    if(bookings){
+        return next(new AppException(401, 'You cannot update your profile if you have an active booking.'));
+    }
 
     res.status(201).json({
         status: 'success',
@@ -141,6 +151,15 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 exports.deleteMe = catchAsync(async (req, res, next) => {
 
     const user = await User.findByIdAndDelete(req.user.id)
+
+    const bookings = await Booking.find({
+        user: user._id,
+        status: 'inprogress'
+    })
+
+    if(bookings){
+        return next(new AppException(401, 'You cannot delete your profile if you have an active booking.'));
+    }
 
     res.status(200).json({
         status: 'success',

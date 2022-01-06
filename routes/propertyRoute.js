@@ -12,13 +12,31 @@ router.get('/nearby', propertyController.getDistances)
 router
 .route('/')
 .get(propertyController.getAllProperties)
-.post(authController.protect, authController.restrictTo('admin', 'vendor'), userController.setVendorId('body'), propertyController.createProperty);
+.post(
+    authController.protect, 
+    authController.restrictTo('admin', 'vendor'), 
+    userController.setVendorId('body'), 
+    propertyController.uploadPhotos, 
+    propertyController.resizedPhoto, 
+    propertyController.createProperty
+);
 
 router
 .route('/:id')
 .get(propertyController.getProperty)
-.patch(authController.protect, authController.restrictTo('admin', 'vendor'), userController.setVendorId('filter'), propertyController.updateProperty)
-.delete(authController.protect, authController.restrictTo('admin', 'vendor'), propertyController.deleteProperty);
+.patch(
+    authController.protect, 
+    authController.restrictTo('admin', 'vendor'), 
+    userController.setVendorId('filter'),
+    propertyController.uploadPhotos,
+    propertyController.resizedPhoto,
+    propertyController.updateProperty
+)
+.delete(
+    authController.protect,
+    authController.restrictTo('admin', 'vendor'),
+    propertyController.deleteProperty
+);
 
 router.use('/:id/reviews', userController.setVendorId(), reviewRoute);
 

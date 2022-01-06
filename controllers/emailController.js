@@ -1,14 +1,16 @@
 const nodemailer = require('nodemailer');
 const pug = require('pug');
 const htmlToText = require('html-to-text');
+const helpers = require('../utilities/helpers');
 
 module.exports = class Email{
     constructor(user, url, token){
         this.url = url;
         this.token = token;
         this.from = `Company Name <${process.env.EMAIL_FROM}>`;
+        this.user = user;
         this.to = user.email;
-        this.firstName = user.firstName;
+        this.firstName = helpers.toTitleCase(user.firstName);
     }
 
     newTransport (){
@@ -54,7 +56,7 @@ module.exports = class Email{
     }
 
     async sendWelcome(){
-        await this.send('welcome', 'Welcome to the Company Name family')
+        await this.send('welcome', 'Welcome to the Company Name family');
     }
 
     async sendReset(){

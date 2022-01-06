@@ -1,10 +1,8 @@
-const express = require('express');
+const app = require('./app');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-
-const app = require('./app');
-
 const bookingController = require('./controllers/bookingController');
+
 
 dotenv.config({ path: './config.env' });
 
@@ -35,4 +33,3 @@ app.listen(process.env.PORT || 3000, () => {
     console.log(process.env.NODE_ENV)
     console.log(`listening to server on port ${process.env.PORT}`);
 })
-

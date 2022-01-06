@@ -5,7 +5,7 @@ const reviewSchema = new mongoose.Schema(
   {
     text: {
       type: String,
-      required: [true, 'Review can not be empty!'],
+      required: [true, 'text can not be empty!'],
       lowercase: true
     },
     rating: {
@@ -41,12 +41,16 @@ reviewSchema.index({ property: 1, user: 1 }, { unique: true });
 reviewSchema.pre(/^find/, function(next) {
   this.populate({
     path: 'user',
-    select: 'userName'
+    select: 'userName image'
+  }).populate({
+    path: 'property',
+    select: 'name coverImage'
   });
   next();
 });
 
 reviewSchema.statics.calcAverageRatings = async function(propertyId) {
+  
   const stats = await this.aggregate([
     {
       $match: { property: propertyId }
@@ -59,17 +63,20 @@ reviewSchema.statics.calcAverageRatings = async function(propertyId) {
       }
     }
   ]);
-  // console.log(stats);
+
+  console.log(stats);
 
   if (stats.length > 0) {
+    console.log('above');
     await Property.findByIdAndUpdate(propertyId, {
       ratingsQuantity: stats[0].nRating,
       ratingsAverage: stats[0].avgRating
     });
   } else {
+    console.log('below');
     await Property.findByIdAndUpdate(propertyId, {
       ratingsQuantity: 0,
-      ratingsAverage: 4.5
+      ratingsAverage: 0
     });
   }
 };
@@ -79,8 +86,6 @@ reviewSchema.post('save', function() {
   this.constructor.calcAverageRatings(this.property);
 });
 
-// findByIdAndUpdate
-// findByIdAndDelete
 reviewSchema.pre(/^findOneAnd/, async function(next) {
   this.r = await this.findOne();
   // console.log(this.r);

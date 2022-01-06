@@ -12,6 +12,7 @@ const factory = require('./factory');
 const catchAsync = require('../utilities/catchAsync');
 const AppException = require('../utilities/AppException');
 const sendResponse = require('../utilities/sendResponse');
+const notificationController = require('./notificationController');
 
 exports.getAllBookings = factory.getDocuments(Booking);
 exports.createBooking = factory.createDocument(Booking);
@@ -61,7 +62,7 @@ const monthDiff = (d1, d2) => {
 }
 
 exports.initializeTransation = catchAsync( async (req, res, next) => {
-
+ 
   const property = await Property.findById(req.params.properyId);
   
   const totalAmount = property.unitPrice;
@@ -108,15 +109,16 @@ exports.initializeTransation = catchAsync( async (req, res, next) => {
   }
 
   const httpsRequest = https.request(options, httpsResponse => {
-  let data = ''
+  let result = ''
   httpsResponse.on('data', (chunk) => {
-    data += chunk
+    result += chunk
   });
   httpsResponse.on('end', () => {
-    
-    res.status(201).json({
+    const resp = JSON.parse(result)
+    console.log(resp)
+    res.status(200).json({
       status: 'success',
-      data: JSON.parse(data)
+      ...resp.data
     });
   })
   }).on('error', async error => {
@@ -150,7 +152,6 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
     });
     response.on('end', async () => {
       const result = JSON.parse(data);
-      console.log(result)
       const booking = await Booking.findById(result.data.metadata.booking);
       if(result.status === true){
 
@@ -166,10 +167,16 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
           validateBeforeSave: false
         });
 
-        sendResponse(res, 200, result);
+        const data = {
+          status: "success",
+          data: booking,
+        }
+        
+        notificationController.notify(booking.user, 'You have sucessfully booked a property');
+
+        sendResponse(res, 200, data);
       }
       else{
-        console.log(result.message);
         return next(new AppException(404, 'booking failed, please try again'));
       }
     })

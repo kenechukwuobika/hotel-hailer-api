@@ -18,10 +18,15 @@ const propertySchema = new mongoose.Schema({
         ref: 'User',
     },
 
+    category: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Category',
+    },
+
     ratingsAverage: {
         type: Number,
-        default: 3.8,
-        min: [1, 'Rating must be above 1.0'],
+        default: 0,
+        min: [0, 'Rating must be above 0'],
         max: [5, 'Rating must be below 5.0'],
         set: val => Math.round(val * 10) / 10 // 4.666666, 46.6666, 47, 4.7
     },
@@ -78,11 +83,6 @@ const propertySchema = new mongoose.Schema({
     shortDesc: {
         type: String,
         required: [true, 'Please enter a short description'],
-    },
-
-    amenities: {
-        type: Array,
-        required: [true, 'Please enter amenities'],
     },
 
     amenities: [
