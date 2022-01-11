@@ -52,144 +52,125 @@ const calcNextPaymentDate = (interval) => {
 }
 
 const monthDiff = (d1, d2) => {
-  var months;
-  months = (d2.getFullYear() - d1.getFullYear()) * 12;
-  months -= d1.getMonth();
-  months += d2.getMonth();
-  date = d1.getDay() - d2.getDay();
-  console.log(date)
-  return months <= 0 ? 0 : months;
+	var months;
+	const date1 = new Date(d1);
+	const date2 = new Date(d2)
+	months = (date2.getFullYear() - date1.getFullYear()) * 12;
+	months -= date1.getMonth();
+	months += date2.getMonth();
+	date = date1.getDay() - date2.getDay();
+	console.log(date)
+	return months <= 0 ? 0 : months;
+	// const date1 = new Date(d1);
+	// const date2 = new Date(d2)
+	// return date2.getMonth() - date1.getMonth()
+}
+
+const dayDiff = (d1, d2) => {
+	const date1 = new Date(d1);
+	const date2 = new Date(d2)
+	return date2.getDate() - date1.getDate()
 }
 
 exports.initializeTransation = catchAsync( async (req, res, next) => {
  
-  const property = await Property.findById(req.params.properyId);
+	const property = await Property.findById(req.params.properyId);
 
-  if(!property){
-    return next(new AppException(401, "Property not found"))
-  }
+	if(!property){
+		return next(new AppException(401, "Property not found"))
+	}
+	console.log(req.body.lodgeStartDate)
+	const totalAmount = property.unitPrice * dayDiff(req.body.lodgeStartDate, req.body.lodgeEndDate);
+
+	const { user } = req;
+
+	const data = {
+   		...req.body,
+		user,
+		property,
+		totalAmount,
+	};
   
-  const totalAmount = property.unitPrice;
+	const booking = new Booking(data);
 
-  const user = req.user;
+	const params = JSON.stringify({
+		"email": user.email,
+		"amount": booking.amountOnInterval * 100,
+	});
 
-  const {
-    paymentInterval,
-    amountOnInterval,
-    description,
-    lodgeStartDate,
-    lodgeEndDate,
-  } = req.body;
-  
-  const booking = await Booking.create({
-    property,
-    user,
-    paymentInterval,
-    amountOnInterval,
-    totalAmount,
-    description,
-    lodgeStartDate,
-    lodgeEndDate,
-    status: 'awaiting_payment'
-  });
+  	const response = await axios.post('https://api.paystack.co/transaction/initialize', params, {
+	  	headers: {
+			Authorization: `Bearer ${process.env.PAYSTACK_TEST_SECRET}`,
+			'Content-Type': 'application/json'
+		}
+	})
 
-  const params = JSON.stringify({
-    "email": req.user.email,
-    "amount": booking.amountOnInterval * 100,
-    "metadata": {
-      "booking": booking.id
-    }
-  });
+	if(response.status === 200){
+		const result = { ...response.data };
+		if(result.status === true){
+			booking.reference = result.data.reference;
+			booking.status = 'awaiting_payment';
+			await booking.save();
+			return res.status(200).json({
+				status: 'success',
+				...result.data
+			});
+		}
+	}
 
-  const options = {
-    hostname: 'api.paystack.co',
-    port: 443,
-    path: '/transaction/initialize',
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.PAYSTACK_TEST_SECRET}`,
-      'Content-Type': 'application/json'
-    }
-  }
-
-  const httpsRequest = https.request(options, httpsResponse => {
-  let result = ''
-  httpsResponse.on('data', (chunk) => {
-    result += chunk
-  });
-  httpsResponse.on('end', () => {
-    const resp = JSON.parse(result)
-    console.log(resp)
-    res.status(200).json({
-      status: 'success',
-      ...resp.data
-    });
-  })
-  }).on('error', async error => {
-    console.log(error);
-    booking.status = 'failed';
-    await booking.save();
-    return next(new AppException(400, 'booking failed, please try again'));
-  })
-  httpsRequest.write(params)
-  httpsRequest.end();
+    return next(new AppException(400, 'Could not initialize booking'));
 
 });
 
 exports.verifyTransation = catchAsync( async (req, res, next) => {
-  const https = require('https')
-  
-  const options = {
-    hostname: 'api.paystack.co',
-    port: 443,
-    path: `/transaction/verify/${req.body.reference}`,
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${process.env.PAYSTACK_TEST_SECRET}`
-    }
-  }
+  	const { reference } = req.body;
+	
+	const booking = await Booking.findOne({ reference });
+	
+	if(!booking){
+		return next(new AppException(404, 'booking not found'));
+	}
 
-  const req1 = https.request(options, response => {
-    let data = ''
-    response.on('data', (chunk) => {
-      data += chunk
-    });
-    response.on('end', async () => {
-      const result = JSON.parse(data);
-      const booking = await Booking.findById(result.data.metadata.booking);
-      if(result.status === true){
+	if(booking.paymentVerified){
+		return next(new AppException(400, 'booking already verified'));
+	}
 
-        booking.totalAmountPaid += result.data.amount * 1/100;
-        booking.status = booking.totalAmountPaid < booking.totalAmount ? 'inprogress' : 'completed';
-        booking.lastPaymentDate = Date.now();
-        booking.nextPaymentDate = calcNextPaymentDate(booking.paymentInterval);
-        booking.reference = result.data.reference;
+	const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+		headers: {
+		Authorization: `Bearer ${process.env.PAYSTACK_TEST_SECRET}`
+		}
+	})
 
-        booking.history.push({date: Date.now(), amount: result.data.amount * 1/100, status: 'successful'});
+	if(response.status === 200){
+		const result = { ...response.data };
+		if(result.status === true){
+		const { data } = result;
+		booking.totalAmountPaid += data.amount * 1/100;
+		booking.status = booking.totalAmountPaid < booking.totalAmount ? 'in_progress' : 'completed';
+		booking.lastPaymentDate = Date.now();
+		booking.nextPaymentDate = calcNextPaymentDate(booking.paymentInterval);
+		booking.paymentVerified = true;
 
-        await booking.save({
-          validateBeforeSave: false
-        });
+		booking.history.push({date: Date.now(), amount: data.amount * 1/100, status: 'successful'});
 
-        const data = {
-          status: "success",
-          data: booking,
-        }
-        
-        notificationController.notify(booking.user, 'You have sucessfully booked a property');
+		await booking.save();
 
-        sendResponse(res, 200, data);
-      }
-      else{
-        return next(new AppException(404, 'booking failed, please try again'));
-      }
-    })
-  }).on('error', error => {
-    console.error(error)
-    return next(new AppException(400, 'booking failed, please try again'));
-  })
+		const resData = {
+			status: "success",
+			data: booking,
+		}
+		
+		notificationController.notify(booking.user, 'You have sucessfully booked a property');
 
-  req1.end()
+		sendResponse(res, 200, resData);
+		}
+
+		else{
+			booking.status = 'failed';
+			await booking.save();
+			return next(new AppException(404, 'booking failed, please try again'));
+		}
+	}
 
 });
 

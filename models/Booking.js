@@ -51,6 +51,12 @@ const bookingSchema = new mongoose.Schema({
 
   reference: String,
 
+  paymentVerified: {
+    type: Boolean,
+    required: [true, 'Booking must have a paymentVerified status!'],
+    default: false
+  },
+
   description: {
     type: String,
     lowercase: true
