@@ -27,7 +27,7 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
-    if(req.vendor.role === 'admin') return next(new AppException(400, 'Sorry, you can\'t signup as an admin'))
+    if(req.vendor && req.vendor.role === 'admin') return next(new AppException(400, 'Sorry, you can\'t signup as an admin'))
     const newUser = await User.create({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
@@ -180,8 +180,6 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 		passwordResetExpiresAt: { $gt: Date.now() }
 	});
 
-console.log(req.body.token)
-console.log(hashedToken)
 	// 2) If token has not expired, and there is user, set the new password
 	if (!user) {
 		return next(new AppException(400, 'Token is invalid or has expired'));

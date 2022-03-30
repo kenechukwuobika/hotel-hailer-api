@@ -46,13 +46,15 @@ io.on('connection', socket => {
         console.log(userSockets)
     })
 
-})
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 // app.set('socketio', io);
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10kb' }));
 app.use(cors());
 app.options('*', cors());
+app.set('trust proxy', true);
 
 app.use('/api/v1/auth', authRoute(io));
 app.use('/api/v1/me', meRoute);

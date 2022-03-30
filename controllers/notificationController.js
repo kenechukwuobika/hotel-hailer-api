@@ -13,6 +13,7 @@ exports.notify = () => catchAsync(async (id, text) => {
         user: id,
         text
     })
+    console.log(notification)
 })
 
 exports.markAsRead = catchAsync(async (req, res, next) => {

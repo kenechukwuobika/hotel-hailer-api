@@ -3,8 +3,7 @@ const ApiFeatures = require('../utilities/ApiFeatures');
 const AppException = require('../utilities/AppException');
 
 exports.getDocuments = (Model, populateOption=null) => catchAsync(async(req, res, next) => {
-    let query = Model.find(req.filter);
-    console.log(populateOption)
+    let query = Model.find();
     if(populateOption){
         query = query.populate(populateOption);
     }

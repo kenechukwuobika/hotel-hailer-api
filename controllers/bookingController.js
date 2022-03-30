@@ -1,18 +1,28 @@
-const https = require('https');
-
-const axios = require('axios');
 const cron = require('node-cron');
+
+const paystackService = require('../services/axios/paystack');
 
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const Account = require('../models/Account');
 const Property = require('../models/Property');
-const Transaction = require('../models/Transaction');
 const Email = require('./emailController');
 const factory = require('./factory');
+const notificationController = require('./notificationController');
+
 const catchAsync = require('../utilities/catchAsync');
 const AppException = require('../utilities/AppException');
 const sendResponse = require('../utilities/sendResponse');
-const notificationController = require('./notificationController');
+const helpers = require('../utilities/helpers');
+const {
+    FULL,
+    WEEKLY,
+    BI_WEEKLY,
+    MONTHLY,
+    PAYMENT_IN_PROGRESS,
+    PAYMENT_COMPLETE,
+
+} = require('../constants');
 
 exports.getAllBookings = factory.getDocuments(Booking);
 exports.createBooking = factory.createDocument(Booking);
@@ -20,90 +30,427 @@ exports.getBooking = factory.getDocument(Booking);
 exports.updateBooking = factory.updateDocument(Booking);
 exports.deleteBooking = factory.deleteDocument(Booking);
 
-const calcNextPaymentDate = (interval) => {
-  var date = '';
-  switch (interval) {
-    case 'hourly':
-      date = new Date(Date.now() + 60 * 60 * 1000);
-      break;
+const createPaymentPlan = (name, billableInterval, totalAmount ) => {
+    const amountOnInterval = helpers.round5(totalAmount/billableInterval);
+    const nextPaymentDate = helpers.calcNextPaymentDate(name);
+    const planDetails = [];
+    let totalAmountPaid = 0;
+    // for(let i = 1; i <= billableInterval; i++){
+    //     let amount = 0;
+    //     if( (totalAmount - totalAmountPaid) < amountOnInterval ){
+    //         amount = (totalAmount - totalAmountPaid);
+    //     }else{
+    //         amount = amountOnInterval;
+    //     }
+    //     planDetails.push({
+    //         date :new Date(Date.now() + 14 * 24 * 60 * 60 * 1000  * i),
+    //         amount
+    //     })
+
+    //     totalAmountPaid += amount;
+    // }
+
+    return {
+        name,
+        amountOnInterval,
+        nextPaymentDate,
+        // planDetails
+    }
+}
+
+const getBillableInterval = (paymentInterval, differenceInWeeks) => {   
+    if(paymentInterval === WEEKLY){
+        return differenceInWeeks - 1;
+    }
+    else if(paymentInterval === BI_WEEKLY){
+        return Math.floor((differenceInWeeks - 1) / 2);
+    }
+    else if(paymentInterval === MONTHLY){
+        return Math.floor((differenceInWeeks - 1) / 4);
+    }
+    else{
+        return 1;
+    }
+}
+
+const calcDiffInWeeks = (date) => {
+    const currentDate = new Date(Date.now());
+    const differenceInSeconds = new Date(date).getTime() - currentDate.getTime();
+    return Math.floor(differenceInSeconds / (3600 * 1000 * 24 * 7));
+}
+
+const calcAmountOnInterval = (totalAmount, paymentInterval, billableInterval) => {   
+    if(paymentInterval === FULL){
+        return totalAmount;
+    }else{
+        return helpers.round5(totalAmount/billableInterval);
+    }
+}
+
+exports.getBookedDates = catchAsync(async (req, res, next) => {
+
+    const { propertyId } = req.params;
+    const { month, year } = req.body;
+
+    const currentDate = new Date(Date.now());
+    const lastDate = new Date(year, month, 0).getDate();
+
+    const bookings = await Booking.find({ 
+        property: propertyId, 
+        $or: [
+            {
+                lodgeStartDate: { 
+                    $gte: currentDate, $lte: `${year}-${month}-${lastDate}` 
+                }
+            },
+            {
+                lodgeEndDate: { 
+                    $gte: currentDate, $lte: `${year}-${month}-${lastDate}` 
+                }
+            }
+        ]
+    });
     
-    case 'daily':
-      date = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      break;
+    const bookedDates = [];
     
-    case 'weekly':
-      date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      break;
+    if(bookings && bookings.length !== 0){
+        bookings.forEach(booking => bookedDates.push({ lodgeStartDate: booking.lodgeStartDate, lodgeEndDate: booking.lodgeEndDate }));
+    }
 
-    case 'bi-weekly':
-      date = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-      break;
+    return res.status(200).json({
+        status: 'success',
+        result: bookedDates.length,
+        bookedDates
+    });
 
-    case 'monthly':
-      date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    break;
-  
-    default:
-      break;
-  }
+});
 
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+exports.checkPlanEligibility = catchAsync(async (req, res, next) => {
 
-}
+    const { propertyId } = req.params;
+    const { 
+        lodgeStartDate,
+        lodgeEndDate
+    } = req.body;
 
-const monthDiff = (d1, d2) => {
-	var months;
-	const date1 = new Date(d1);
-	const date2 = new Date(d2)
-	months = (date2.getFullYear() - date1.getFullYear()) * 12;
-	months -= date1.getMonth();
-	months += date2.getMonth();
-	date = date1.getDay() - date2.getDay();
-	console.log(date)
-	return months <= 0 ? 0 : months;
-	// const date1 = new Date(d1);
-	// const date2 = new Date(d2)
-	// return date2.getMonth() - date1.getMonth()
-}
+    if(!lodgeStartDate || !lodgeEndDate){
+        return next(new AppException(400, "Invalid input. Please provide the lodge start and end dates"));
+    }
 
-const dayDiff = (d1, d2) => {
-	const date1 = new Date(d1);
-	const date2 = new Date(d2)
-	return date2.getDate() - date1.getDate()
-}
+    const property = await Property.findById(propertyId);
 
-exports.initializeTransation = catchAsync( async (req, res, next) => {
+    if(!property){
+		return next(new AppException(401, "Property not found"));
+	}
+
+    const differenceInWeeks = calcDiffInWeeks(lodgeStartDate)
+    let partialPaymentSupport = false;
+    const partialPaymentPlans = [];
+    const totalAmount = property.unitPrice * helpers.dayDiff(lodgeEndDate, lodgeStartDate);
+
+    const plans = [
+        {
+            name: WEEKLY,
+            weekBuffer: 4
+        },
+        {
+            name: BI_WEEKLY,
+            weekBuffer: 6
+        },
+        {
+            name: MONTHLY,
+            weekBuffer: 10
+        },
+    ];
+
+    plans.forEach(plan => {
+        const { name, weekBuffer } = plan;
+        if(differenceInWeeks >= weekBuffer){
+            partialPaymentSupport = true
+            const billableInterval = getBillableInterval(name, differenceInWeeks)
+            const paymentPlan = createPaymentPlan(name, billableInterval, totalAmount)
+            partialPaymentPlans.push(paymentPlan)
+        }
+    });
+
+    return res.status(200).json({
+        status: 'success',
+        totalAmount,
+        partialPaymentSupport,
+        partialPaymentPlans
+    });
+
+});
+
+exports.initializeTransaction = catchAsync( async (req, res, next) => {
  
-	const property = await Property.findById(req.params.properyId);
+	const property = await Property.findById(req.params.propertyId);
 
 	if(!property){
-		return next(new AppException(401, "Property not found"))
+		return next(new AppException(401, "Property not found"));
 	}
-	console.log(req.body.lodgeStartDate)
-	const totalAmount = property.unitPrice * dayDiff(req.body.lodgeStartDate, req.body.lodgeEndDate);
 
+	const { lodgeEndDate, lodgeStartDate, paymentInterval } = req.body;
 	const { user } = req;
+	
+	if(lodgeEndDate && lodgeStartDate) {
+		totalAmount = property.unitPrice * helpers.dayDiff(lodgeEndDate, lodgeStartDate);
+	}
+    
+    const differenceInWeeks = calcDiffInWeeks(lodgeStartDate);
+    const billableInterval = getBillableInterval(paymentInterval, differenceInWeeks)
+    const amountOnInterval = calcAmountOnInterval(totalAmount, paymentInterval, billableInterval);
 
-	const data = {
-   		...req.body,
+	const data = Object.assign(req.body, {
 		user,
 		property,
 		totalAmount,
-	};
+        amountOnInterval
+	});
   
 	const booking = new Booking(data);
+    console.log(booking)
 
 	const params = JSON.stringify({
-		"email": user.email,
-		"amount": booking.amountOnInterval * 100,
+		email: user.email,
+		amount: booking.amountOnInterval * 100,
 	});
 
-  	const response = await axios.post('https://api.paystack.co/transaction/initialize', params, {
-	  	headers: {
-			Authorization: `Bearer ${process.env.PAYSTACK_TEST_SECRET}`,
-			'Content-Type': 'application/json'
+	try {
+        const response = await paystackService.post('/initialize', params);
+
+        if(response.status === 200){
+            const result = response.data;
+            if(result.status === true){
+                booking.reference = result.data.reference;
+                await booking.save();
+                return res.status(200).json({
+                    status: 'success',
+                    ...result.data
+                });
+            }
+        }
+
+        return next(new AppException(400, 'Could not initialize booking'));
+    } catch (error) {
+        // console.log(error)
+        return next(new AppException(400, error));
+    }
+
+});
+
+/**
+ * Verifies the payment status of a booking from Paystack
+ * @type {object}
+ */
+exports.verifyTransation = catchAsync( async (req, res, next) => {
+  	//get reference for rquest body
+	const { reference } = req.body;
+
+	// check if reference number was provided
+	if(!reference){
+		return next(new AppException(400, 'Please provide a booking reference number'));
+	}
+	
+	// find booking with reference number
+	const booking = await Booking.findOne({ reference });
+	
+	// check if booking exists or not
+	if(!booking){
+		return next(new AppException(404, 'Invalid booking reference number'));
+	}
+
+	// verify payment from paystack
+	const response = await paystackService.get(`/verify/${reference}`)
+
+	//do if booking has not already been verified
+	if(!booking.paymentVerified){
+		if(response.status === 200){
+			const result = { ...response.data };
+			if(result.status === true){
+				const { data } = result;
+				if(data.status === 'success'){
+					booking.totalAmountPaid += data.amount/100;
+					booking.lastPaymentAmount = data.amount/100;
+					booking.lastPaymentDate = Date.now();
+                    if(booking.paymentInterval !== FULL){
+                        booking.status = PAYMENT_IN_PROGRESS;
+                        booking.nextPaymentDate = helpers.calcNextPaymentDate(booking.paymentInterval);
+                    }
+                    else{
+                        booking.status = PAYMENT_COMPLETE;
+                    }
+					booking.paymentVerified = true;
+		
+					booking.history.push({date: Date.now(), amount: data.amount/100, status: 'successful'});
+		
+					await booking.save();
+
+					const authorization = data.authorization;
+
+					const filter = {
+						card_type: authorization.card_type,
+						last_4: authorization.last4
+					}
+
+					const update = {
+						paystack_auth_code: authorization.authorization_code,
+						card_type: authorization.card_type,
+						last_4: authorization.last4,
+						exp_month: authorization.exp_month,
+						exp_year: authorization.exp_year,
+						bank: authorization.bank,
+					}
+
+					const account = await Account.findOneAndUpdate(filter, update, {
+						new: true,
+						upsert: true
+					})
+
+					notificationController.notify(booking.user, 'You have sucessfully booked a property');
+
+				}
+				
+				else{
+					booking.status = 'failed';
+					await booking.save();
+					return next(new AppException(404, 'booking failed, please try again'));
+				}
+			}
+
+			else{
+				booking.status = 'failed';
+				await booking.save();
+				return next(new AppException(404, 'booking failed, please try again'));
+			}
 		}
+	}
+
+	const resData = {
+		status: "success",
+		data: booking,
+	}
+
+	sendResponse(res, 200, resData);
+
+});
+
+/**
+ * Verifies the payment status of a booking from Paystack
+ * @type {object}
+ */
+exports.charge = catchAsync( async (req, res, next) => {
+	//get reference for rquest body
+	const { accountID } = req.body;
+
+	// check if reference number was provided
+	if(!accountID){
+		return next(new AppException(400, 'Please provide account id'));
+	}
+	
+	// find booking with reference number
+	const account = await Booking.findById(accountID);
+  
+	// check if booking exists or not
+	if(!account){
+		return next(new AppException(404, 'account not found'));
+	}
+
+	// verify payment from paystack
+	const response = await paystackService.get(`/verify/${reference}`)
+
+  	//do if booking has not already been verified
+	if(!booking.paymentVerified){
+		if(response.status === 200){
+			const result = { ...response.data };
+			if(result.status === true){
+				const { data } = result;
+				if(data.status === 'success'){
+					booking.totalAmountPaid += data.amount/100;
+					booking.status = booking.totalAmountPaid < booking.totalAmount ? 'in_progress' : 'completed';
+					booking.lastPaymentDate = Date.now();
+					booking.nextPaymentDate = helpers.calcNextPaymentDate(booking.paymentInterval);
+					booking.paymentVerified = true;
+		
+					booking.history.push({date: Date.now(), amount: data.amount/100, status: 'successful'});
+		
+					await booking.save();
+
+					const authorization = data.authorization;
+
+					const filter = {
+						card_type: authorization.card_type,
+						last_4: authorization.last4
+					}
+
+					const update = {
+						paystack_auth_code: authorization.authorization_code,
+						card_type: authorization.card_type,
+						last_4: authorization.last4,
+						exp_month: authorization.exp_month,
+						exp_year: authorization.exp_year,
+						bank: authorization.bank,
+					}
+
+					const account = await Account.findOneAndUpdate(filter, update, {
+						new: true,
+						upsert: true
+					})
+
+					notificationController.notify(booking.user, 'You have sucessfully booked a property');
+
+				}
+				
+				else{
+					booking.status = 'failed';
+					await booking.save();
+					return next(new AppException(404, 'booking failed, please try again'));
+				}
+			}
+
+			else{
+				booking.status = 'failed';
+				await booking.save();
+				return next(new AppException(404, 'booking failed, please try again'));
+			}
+		}
+	}
+
+	const resData = {
+		status: "success",
+		data: booking,
+	}
+
+	sendResponse(res, 200, resData);
+
+});
+
+const chargeCard = async (booking) => {
+
+  	const user = await User.findById(booking.user);
+
+	const params = JSON.stringify({
+		authorization_code : user.paystack_auth_code,
+		email : user.email,
+		amount : booking.nextPaymentAmount * 100
 	})
+
+  // verify payment from paystack
+  const response = await paystackService.post(`/charge_authorization`, params)
+
+  return response;
+
+};
+
+const initialize = async (user, booking, res) => {
+
+  	const params = JSON.stringify({
+		"email" : user.email,
+		"amount" : booking.amountOnInterval * 100
+  	})
+
+	// initialize payment from paystack
+	const response = await paystackService.post(`/initialize`, params)
 
 	if(response.status === 200){
 		const result = { ...response.data };
@@ -118,156 +465,99 @@ exports.initializeTransation = catchAsync( async (req, res, next) => {
 		}
 	}
 
-    return next(new AppException(400, 'Could not initialize booking'));
+};
 
-});
+exports.schedule = () => cron.schedule('*/2 * * * * *', catchAsync( async () => {
+    
+  	console.log('running');
 
-exports.verifyTransation = catchAsync( async (req, res, next) => {
-  	const { reference } = req.body;
-	
-	const booking = await Booking.findOne({ reference });
-	
-	if(!booking){
-		return next(new AppException(404, 'booking not found'));
-	}
+	const bookings = await Booking.find({ 
+		status: PAYMENT_IN_PROGRESS,
+		paymentVerified: true,
+		failedAttempts: { $lt: 3 }
+	});
 
-	if(booking.paymentVerified){
-		return next(new AppException(400, 'booking already verified'));
-	}
+	bookings.forEach(async (booking) => {
+		try {
+			const user = await User.findById(booking.user);
 
-	const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-		headers: {
-		Authorization: `Bearer ${process.env.PAYSTACK_TEST_SECRET}`
-		}
-	})
+			const params = JSON.stringify({
+				authorization_code : user.paystack_auth_code,
+				email : user.email,
+				amount : booking.nextPaymentAmount * 100
+			})
 
-	if(response.status === 200){
-		const result = { ...response.data };
-		if(result.status === true){
-		const { data } = result;
-		booking.totalAmountPaid += data.amount * 1/100;
-		booking.status = booking.totalAmountPaid < booking.totalAmount ? 'in_progress' : 'completed';
-		booking.lastPaymentDate = Date.now();
-		booking.nextPaymentDate = calcNextPaymentDate(booking.paymentInterval);
-		booking.paymentVerified = true;
-
-		booking.history.push({date: Date.now(), amount: data.amount * 1/100, status: 'successful'});
-
-		await booking.save();
-
-		const resData = {
-			status: "success",
-			data: booking,
-		}
-		
-		notificationController.notify(booking.user, 'You have sucessfully booked a property');
-
-		sendResponse(res, 200, resData);
+			const response = await paystackService.post(`/charge_authorization`, params)
+            if(response.status === 200){
+                const result = response.data;
+                if(result.status === true){
+                    const { data } = result;
+                    if(data.status === 'success'){
+                        booking.totalAmountPaid += booking.nextPaymentAmount;
+                        booking.status = booking.totalAmountPaid < booking.totalAmount ? 'in_progress' : 'completed';
+                        booking.lastPaymentDate = Date.now();
+                        booking.nextPaymentDate = helpers.calcNextPaymentDate(booking.paymentInterval);
+                        booking.history.push({date: Date.now(), amount: booking.nextPaymentAmount, status: 'successful'});
+                    }
+                }
+            }
+		} catch (error) {
+			console.log(error.response)
 		}
 
-		else{
-			booking.status = 'failed';
-			await booking.save();
-			return next(new AppException(404, 'booking failed, please try again'));
-		}
-	}
+	});
 
-});
+}));
 
 exports.transactionWebhook = catchAsync( async (req, res, next) => {
-  const {authorization, metadata, amount } = req.body.data;
-
-  const {
-    paymentInterval,
-    amountOnInterval,
-    totalAmount,
-    status,
-    description,
-    lodgeStartDate,
-    lodgeEndDate,
-  } = metadata;
+	const { authorization, metadata, amount } = req.body.data;
   
-  const customer = await User.findOne({email: req.body.data.customer.email});
-
-  const property = await Property.findById(metadata.property);
-
-  const nextPaymentDate = calcNextPaymentDate(paymentInterval);
-
-  const booking = await Booking.create({
-      property,
-      customer,
-      paymentInterval,
-      amountOnInterval,
-      totalAmount,
-      lastPaymentAmount: amount,
-      amountPaid: amount,
-      status,
-      description,
-      lodgeStartDate,
-      lodgeEndDate,
-      nextPaymentDate
-  });
-
-  customer.paystack_auth_code = authorization.authorization_code;
-  customer.card_type = authorization.card_type;
-  customer.last_4 = authorization.last4;
-  customer.exp_month = authorization.exp_month;
-  customer.exp_year = authorization.exp_year;
-  customer.bank = authorization.bank;
-
-  await customer.save({
-    validateBeforeSave: false
-  })
-
-  res.status(200).json({
-    status: 'success',
-    data: booking
-  });
-
-
+	const {
+	  paymentInterval,
+	  amountOnInterval,
+	  totalAmount,
+	  status,
+	  description,
+	  lodgeStartDate,
+	  lodgeEndDate,
+	} = metadata;
+	
+	const customer = await User.findOne({email: req.body.data.customer.email});
+  
+	const property = await Property.findById(metadata.property);
+  
+	const nextPaymentDate = calcNextPaymentDate(paymentInterval);
+  
+		const booking = await Booking.create({
+		  property,
+		  customer,
+		  paymentInterval,
+		  amountOnInterval,
+		  totalAmount,
+		  lastPaymentAmount: amount,
+		  amountPaid: amount,
+		  status,
+		  description,
+		  lodgeStartDate,
+		  lodgeEndDate,
+		  nextPaymentDate
+		})
+  
+	customer.paystack_auth_code = authorization.authorization_code;
+	customer.card_type = authorization.card_type;
+	customer.last_4 = authorization.last4;
+	customer.exp_month = authorization.exp_month;
+	customer.exp_year = authorization.exp_year;
+	customer.bank = authorization.bank;
+  
+	await customer.save({
+	  validateBeforeSave: false
+	})
+  
+	res.status(200).json({
+	  status: 'success',
+	  data: booking
+	});
+  
+  
 });
-
-// exports.schedule = cron.schedule('*/2 * * * * *', catchAsync( async () => {
-    
-//   console.log('running')
-
-//   const bookings = await Booking.find({ status: 'inprogress' });
-
-//   bookings.forEach(async (booking) => {
-//     const customer = await Customer.findById(booking.customer);
-
-//     const params = JSON.stringify({
-//       "authorization_code" : customer.paystack_auth_code,
-//       "email" : customer.email,
-//       "amount" : booking.nextPaymentAmount * 100
-//     })
-
-//     const options = {
-//       hostname: 'api.paystack.co',
-//       port: 443,
-//       path: '/transaction/charge_authorization',
-//       method: 'POST',
-//       headers: {
-//         Authorization: `Bearer ${process.env.PAYSTACK_TEST_SECRET}`,
-//         'Content-Type': 'application/json'
-//       }
-//     }
-//     const req1 = https.request(options, response => {
-//       let data = ''
-//       response.on('data', (chunk) => {
-//         data += chunk
-//       });
-//       response.on('end', () => {
-//         console.log(JSON.parse(data))
-//         // res.status(200).json({
-//         //   data
-//         // })
-//       })
-//     }).on('error', error => {
-//       console.error(error)
-//     })
-//     req1.write(params)
-//     req1.end()
-//   });
-
-// }));

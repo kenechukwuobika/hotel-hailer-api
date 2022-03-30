@@ -8,7 +8,9 @@ const router = express.Router();
 
 router.use(authController.protect)
 router.post('/transationWebhook', bookingController.transactionWebhook);
-router.post('/initialize/:properyId', bookingController.initializeTransation);
+router.post('/getBookedDates/:propertyId', bookingController.getBookedDates);
+router.post('/checkPlanEligibility/:propertyId', bookingController.checkPlanEligibility);
+router.post('/initialize/:propertyId', bookingController.initializeTransaction);
 router.post('/verify', bookingController.verifyTransation);
 
 router

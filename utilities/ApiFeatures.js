@@ -25,14 +25,20 @@ class ApiFeatures{
 
     paginate(){
         const { page } = this.queryObj
-        const limit = 5;
+        const limit = 100;
         const skip = (page - 1) * limit
         this.query.skip(skip).limit(limit);
         return this;
     }
 
     sort(){
-        this.query.sort(this.queryObj.sort);
+        if (this.queryObj.sort) {
+            const sortBy = this.queryObj.sort.split(',').join(' ');
+            this.query = this.query.sort(sortBy);
+        } else {
+            this.query = this.query.sort('-createdAt');
+        }
+      
         return this;
     }
 

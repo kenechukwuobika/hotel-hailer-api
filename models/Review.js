@@ -64,8 +64,6 @@ reviewSchema.statics.calcAverageRatings = async function(propertyId) {
     }
   ]);
 
-  console.log(stats);
-
   if (stats.length > 0) {
     console.log('above');
     await Property.findByIdAndUpdate(propertyId, {

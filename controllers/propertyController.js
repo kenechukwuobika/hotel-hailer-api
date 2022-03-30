@@ -22,7 +22,6 @@ const upload = multer({
 
 exports.resizedPhoto = (req, res, next) => {
   try {
-    console.log(req.files)
     if(req.files && Object.keys(req.files).length !== 0){
         // if(req.files.coverImage){
         //     const coverImage = req.files.coverImage[0];
@@ -64,7 +63,6 @@ exports.uploadPhotos = upload.fields([
 ]);
 
 exports.setPropertyId = (type = 'filter') => catchAsync(async (req, res, next) => {
-    console.log(req.params.id)
     if(req.user && req.user.role === 'vendor'){
         if(type === 'body'){
             req.body.vendor = req.user._id;
@@ -75,13 +73,7 @@ exports.setPropertyId = (type = 'filter') => catchAsync(async (req, res, next) =
         }
     }
     next();
-})
-
-exports.getAllProperties = factory.getDocuments(Property);
-exports.createProperty = factory.createDocument(Property);
-exports.getProperty = factory.getDocument(Property);
-exports.updateProperty = factory.updateDocument(Property);
-exports.deleteProperty = factory.deleteDocument(Property);
+});
 
 exports.getDistances = catchAsync(async (req, res, next) => {
     const { lat, lng, unit } = req.query;
@@ -127,3 +119,9 @@ exports.getDistances = catchAsync(async (req, res, next) => {
         data: distances
     });
 });
+
+exports.getAllProperties = factory.getDocuments(Property);
+exports.createProperty = factory.createDocument(Property);
+exports.getProperty = factory.getDocument(Property);
+exports.updateProperty = factory.updateDocument(Property);
+exports.deleteProperty = factory.deleteDocument(Property);

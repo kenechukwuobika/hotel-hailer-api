@@ -8,7 +8,7 @@ dotenv.config({ path: './config.env' });
 
 let db = '';
 
-if(process.env.NODE_ENV === 'production'){
+if(process.env.NODE_ENV === 'development'){
     db = process.env.ONLINE_DATABASE;
     db = process.env.ONLINE_DATABASE.replace('<password>',
     process.env.DATABASE_PASSWORD);
@@ -29,6 +29,6 @@ mongoose.connect(db, {
 });
 
 app.listen(process.env.PORT || 3000, () => {
-    console.log(process.env.NODE_ENV)
+    console.log(process.env.NODE_ENV);
     console.log(`listening to server on port ${process.env.PORT}`);
 })
