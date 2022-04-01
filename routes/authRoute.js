@@ -7,6 +7,7 @@ module.exports = function(io) {
 
     router.route('/signup').post(authController.signup);
     router.route('/login').post(authController.login);
+    router.route('/emailcheck').post(authController.checkEmailExist);
     router.route('/forgotpassword').post(authController.forgotPassword);
     router.route('/resetpassword').post(authController.resetPassword);
 
