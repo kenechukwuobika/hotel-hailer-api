@@ -23,6 +23,11 @@ const bookingSchema = new mongoose.Schema({
         required: [true, 'Booking must belong to a user!']
     },
 
+    card: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Card'
+    },
+
     paymentInterval: {
         type: String,
         required: [true, 'Booking must have a payment interval!'],
