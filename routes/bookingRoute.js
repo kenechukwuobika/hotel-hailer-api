@@ -11,6 +11,7 @@ router.post('/transationWebhook', bookingController.transactionWebhook);
 router.get('/booked-dates', bookingController.getBookedDates);
 router.get('/booking-plans', bookingController.getBookingPlans);
 router.post('/initialize/:propertyId', bookingController.initializeTransaction);
+router.post('/pay/:propertyId', bookingController.pay);
 router.post('/verify', bookingController.verifyTransation);
 
 router

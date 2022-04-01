@@ -339,7 +339,7 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
  * Verifies the payment status of a booking from Paystack
  * @type {object}
  */
-exports.charge = catchAsync( async (req, res, next) => {
+exports.pay = catchAsync( async (req, res, next) => {
 	const property = await Property.findById(req.params.propertyId);
     if(!property){
 		return next(new AppException(401, "Property not found"));
