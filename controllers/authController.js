@@ -232,6 +232,6 @@ exports.checkEmailExist = catchAsync(async (req, res, next) => {
 	
     res.status(200).json({
         status: "success",
-        message: ""
+        message: "Email address is available"
     })
 });

@@ -18,7 +18,7 @@ router
 .patch(cardController.updateCard)
 .delete(cardController.deleteCard);
 
-router.get('/can-delete-card/:id', cardController.canDeleteCard)
+router.get('/delete-card/:id', cardController.canDeleteCard)
 
 module.exports = router;
 
