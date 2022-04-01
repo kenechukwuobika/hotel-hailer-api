@@ -90,9 +90,9 @@ const calcAmountOnInterval = (totalAmount, paymentInterval, billableInterval) =>
 }
 
 exports.getBookedDates = catchAsync(async (req, res, next) => {
-
-    const { propertyId } = req.params;
-    const { month, year } = req.body;
+    
+    const { month, year, propertyId } = req.query;
+    console.log(req.query)
 
     const currentDate = new Date(Date.now());
     const lastDate = new Date(year, month, 0).getDate();
@@ -127,13 +127,9 @@ exports.getBookedDates = catchAsync(async (req, res, next) => {
 
 });
 
-exports.checkPlanEligibility = catchAsync(async (req, res, next) => {
+exports.getBookingPlans = catchAsync(async (req, res, next) => {
 
-    const { propertyId } = req.params;
-    const { 
-        lodgeStartDate,
-        lodgeEndDate
-    } = req.body;
+    const { propertyId, lodgeStartDate, lodgeEndDate } = req.query;
 
     if(!lodgeStartDate || !lodgeEndDate){
         return next(new AppException(400, "Invalid input. Please provide the lodge start and end dates"));
