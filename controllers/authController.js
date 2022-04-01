@@ -218,3 +218,20 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
 
 	createSendToken(user, 200, res);
 });
+
+exports.checkEmailExist = catchAsync(async (req, res, next) => {
+	const { email } = req.body;
+    const user = await User.findOne({
+		email,
+	});
+
+	// 2) If token has not expired, and there is user, set the new password
+	if (user) {
+		return next(new AppException(400, 'Email address is in use by another user'));
+	}
+	
+    res.status(200).json({
+        status: "success",
+        message: ""
+    })
+});
