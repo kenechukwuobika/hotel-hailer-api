@@ -4,7 +4,7 @@ const paystackService = require('../services/axios/paystack');
 
 const Booking = require('../models/Booking');
 const User = require('../models/User');
-const Account = require('../models/Account');
+const Card = require('../models/Card');
 const Property = require('../models/Property');
 const Email = require('./emailController');
 const factory = require('./factory');
@@ -21,6 +21,8 @@ const {
     MONTHLY,
     PAYMENT_IN_PROGRESS,
     PAYMENT_COMPLETE,
+    COMPLETE,
+    IN_PROGRESS,
 
 } = require('../constants');
 
@@ -190,7 +192,7 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
 		return next(new AppException(401, "Property not found"));
 	}
 
-	const { lodgeEndDate, lodgeStartDate, paymentInterval } = req.body;
+	const { lodgeEndDate, lodgeStartDate, paymentInterval, description } = req.body;
 	const { user } = req;
 	
 	if(lodgeEndDate && lodgeStartDate) {
@@ -209,7 +211,6 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
 	});
   
 	const booking = new Booking(data);
-    console.log(booking)
 
 	const params = JSON.stringify({
 		email: user.email,
@@ -282,9 +283,7 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
                     }
 					booking.paymentVerified = true;
 		
-					booking.history.push({date: Date.now(), amount: data.amount/100, status: 'successful'});
-		
-					await booking.save();
+					booking.history.push({date: Date.now(), amount: data.amount/100, status: 'successful'});					
 
 					const authorization = data.authorization;
 
@@ -294,6 +293,8 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
 					}
 
 					const update = {
+                        email: req.user.email,
+                        user: req.user._id,
 						paystack_auth_code: authorization.authorization_code,
 						card_type: authorization.card_type,
 						last_4: authorization.last4,
@@ -302,10 +303,13 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
 						bank: authorization.bank,
 					}
 
-					const account = await Account.findOneAndUpdate(filter, update, {
+					const card = await Card.findOneAndUpdate(filter, update, {
 						new: true,
 						upsert: true
 					})
+
+                    booking.card = card._id
+                    await booking.save();
 
 					notificationController.notify(booking.user, 'You have sucessfully booked a property');
 
@@ -340,24 +344,44 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
  * @type {object}
  */
 exports.charge = catchAsync( async (req, res, next) => {
+	const property = await Property.findById(req.params.propertyId);
+    if(!property){
+		return next(new AppException(401, "Property not found"));
+	}
 	//get reference for rquest body
-	const { accountID } = req.body;
+    const { cardID, lodgeEndDate, lodgeStartDate, paymentInterval, description } = req.body;
+	const { user } = req;
 
 	// check if reference number was provided
-	if(!accountID){
-		return next(new AppException(400, 'Please provide account id'));
+	if(!cardID){
+		return next(new AppException(400, 'Please provide card id'));
 	}
 	
 	// find booking with reference number
-	const account = await Booking.findById(accountID);
+	const card = await Card.findById(cardID);
   
 	// check if booking exists or not
-	if(!account){
-		return next(new AppException(404, 'account not found'));
+	if(!card){
+		return next(new AppException(404, 'card not found'));
 	}
 
+    const data = Object.assign(req.body, {
+		user,
+		property,
+		totalAmount,
+        amountOnInterval
+	});
+  
+	const booking = new Booking(data);
+
+    const params = JSON.stringify({
+        authorization_code : card.paystack_auth_code,
+        email : card.email,
+        amount : totalAmount * 100
+    })
+
 	// verify payment from paystack
-	const response = await paystackService.get(`/verify/${reference}`)
+	const response = await paystackService.post(`/charge_authorization/`, params)
 
   	//do if booking has not already been verified
 	if(!booking.paymentVerified){
@@ -367,7 +391,7 @@ exports.charge = catchAsync( async (req, res, next) => {
 				const { data } = result;
 				if(data.status === 'success'){
 					booking.totalAmountPaid += data.amount/100;
-					booking.status = booking.totalAmountPaid < booking.totalAmount ? 'in_progress' : 'completed';
+					booking.status = booking.totalAmountPaid < booking.totalAmount ? IN_PROGRESS : COMPLETED;
 					booking.lastPaymentDate = Date.now();
 					booking.nextPaymentDate = helpers.calcNextPaymentDate(booking.paymentInterval);
 					booking.paymentVerified = true;
@@ -392,7 +416,7 @@ exports.charge = catchAsync( async (req, res, next) => {
 						bank: authorization.bank,
 					}
 
-					const account = await Account.findOneAndUpdate(filter, update, {
+					const card = await Card.findOneAndUpdate(filter, update, {
 						new: true,
 						upsert: true
 					})
