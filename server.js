@@ -8,7 +8,7 @@ dotenv.config({ path: './config.env' });
 
 let db = '';
 
-if(process.env.NODE_ENV === 'development'){
+if(process.env.NODE_ENV === 'production'){
     db = process.env.ONLINE_DATABASE;
     db = process.env.ONLINE_DATABASE.replace('<password>',
     process.env.DATABASE_PASSWORD);
