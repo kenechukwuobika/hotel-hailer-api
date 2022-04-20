@@ -188,7 +188,7 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
 		return next(new AppException(401, "Property not found"));
 	}
 
-	const { lodgeEndDate, lodgeStartDate, paymentInterval, description } = req.body;
+	const { lodgeEndDate, lodgeStartDate, paymentInterval } = req.body;
 	const { user } = req;
 	
 	if(lodgeEndDate && lodgeStartDate) {
@@ -223,7 +223,7 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
                 await booking.save();
                 return res.status(200).json({
                     status: 'success',
-                    ...result.data
+                    data: result.data
                 });
             }
         }
@@ -345,16 +345,16 @@ exports.pay = catchAsync( async (req, res, next) => {
 		return next(new AppException(401, "Property not found"));
 	}
 	//get reference for rquest body
-    const { cardID, lodgeEndDate, lodgeStartDate, paymentInterval, description } = req.body;
+    const { cardId, lodgeEndDate, lodgeStartDate, paymentInterval, description } = req.body;
 	const { user } = req;
 
 	// check if reference number was provided
-	if(!cardID){
+	if(!cardId){
 		return next(new AppException(400, 'Please provide card id'));
 	}
 	
 	// find booking with reference number
-	const card = await Card.findById(cardID);
+	const card = await Card.findById(cardId);
   
 	// check if booking exists or not
 	if(!card){

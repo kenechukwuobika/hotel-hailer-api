@@ -56,7 +56,7 @@ const bookingSchema = new mongoose.Schema({
     status: {
         type: String,
         required: [true, 'Booking must have a status!'],
-        default: 'awaiting_payment',
+        default: AWAITING_PAYMENT,
         enum: {
             values: [AWAITING_PAYMENT, CANCELLED, FAILED, PAYMENT_IN_PROGRESS, PAYMENT_ON_HOLD, PAYMENT_COMPLETE, IN_PROGRESS, COMPLETE],
             message: `booking status can only either be ${AWAITING_PAYMENT}, ${CANCELLED}, ${FAILED}, ${PAYMENT_IN_PROGRESS}, ${PAYMENT_ON_HOLD}, ${PAYMENT_COMPLETE}, ${IN_PROGRESS}, ${COMPLETE}`
