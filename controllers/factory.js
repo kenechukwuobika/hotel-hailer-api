@@ -4,11 +4,12 @@ const AppException = require('../utilities/AppException');
 
 exports.getDocuments = (Model, populateOption=null) => catchAsync(async(req, res, next) => {
     let query = Model.find(req.filter);
+
     if(populateOption){
         query = query.populate(populateOption);
     }
-    const documents = 
-    await new ApiFeatures(query, req)
+
+    const documents = await new ApiFeatures(query, req)
     .filter()
     .paginate()
     .sort()

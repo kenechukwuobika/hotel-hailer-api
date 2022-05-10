@@ -237,7 +237,7 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
         return next(new AppException(400, 'Could not initialize booking'));
     } catch (error) {
         // console.log(error)
-        return next(new AppException(400, error));
+        return next(new AppException(400, 'Could not initialize booking'));
     }
 
 });

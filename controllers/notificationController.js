@@ -8,7 +8,7 @@ exports.getNotification = factory.getDocument(Notification);
 exports.updateNotification = factory.updateDocument(Notification);
 exports.deleteNotification = factory.deleteDocument(Notification);
 
-exports.notify = () => catchAsync(async (id, text) => {
+exports.notify = catchAsync(async (id, text) => {
     const notification = await Notification.create({
         user: id,
         text

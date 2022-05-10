@@ -27,15 +27,18 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
-    if(req.vendor && req.vendor.role === 'admin') return next(new AppException(400, 'Sorry, you can\'t signup as an admin'))
+    if(req.vendor && req.vendor.role === 'admin') { 
+        return next(new AppException(400, 'Sorry, you can\'t signup as an admin'))
+    }
+
     const newUser = await User.create({
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      userName: req.body.userName,
-      email: req.body.email,
-      phoneNumber: req.body.phoneNumber,
-      password: req.body.password,
-      passwordConfirm: req.body.passwordConfirm
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        userName: req.body.userName,
+        email: req.body.email,
+        phoneNumber: req.body.phoneNumber,
+        password: req.body.password,
+        passwordConfirm: req.body.passwordConfirm
     });
 
     if(newUser.role === 'vendor'){
@@ -46,7 +49,7 @@ exports.signup = catchAsync(async (req, res, next) => {
       if(!wallet) return next(new AppException(404, `Could not create wallet for user with id: ${newUser._id}}`));
     }
     
-    notificationController.notify(newUser._id, 'Your account has been created');
+    await notificationController.notify(newUser._id, 'Your account has been created');
   
     const url = `${req.protocol}://${req.get('host')}/me`;
     const email = new Email(newUser, url);
@@ -219,19 +222,23 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
 	createSendToken(user, 200, res);
 });
 
-exports.checkEmailExist = catchAsync(async (req, res, next) => {
-	const { email } = req.body;
+const checkFieldExist = (field) => catchAsync(async (req, res, next) => {
+    console.log(req)
     const user = await User.findOne({
-		email,
+		[field]: req.body[field]
 	});
 
 	// 2) If token has not expired, and there is user, set the new password
 	if (user) {
-		return next(new AppException(400, 'Email address is in use by another user'));
+		return next(new AppException(400, `${field} is in use by another user`));
 	}
 	
     res.status(200).json({
         status: "success",
-        message: "Email address is available"
+        message: `${field} is available`
     })
 });
+
+exports.checkEmailExist = checkFieldExist('emailAddress');
+exports.checkUsernameExist = checkFieldExist('Username');
+exports.checkPhoneNumberExist = checkFieldExist('phoneNumber');
