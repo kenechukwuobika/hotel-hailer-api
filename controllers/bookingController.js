@@ -313,7 +313,12 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
                     booking.card = card._id
                     await booking.save();
 
-					notificationController.notify(booking.user, 'You have sucessfully booked a property');
+                    const payload = {
+                        endpoint: 'bookings',
+                        id: booking.id,
+                        message: 'Check it out'
+                    }
+					await notificationController.notify(booking.user, 'You have sucessfully booked a property', payload);
 
 				}
 				
@@ -436,7 +441,13 @@ exports.pay = catchAsync( async (req, res, next) => {
 
   	//do if booking has not already been verified
     const verifiedBooking = verifyBooking(user, booking, response);
-    console.log(`verifiedBooking: ${verifiedBooking}`)
+    const payload = {
+        endpoint: 'bookings',
+        reference: booking.id,
+        message: 'view booking'
+    }
+    await notificationController.notify(booking.user, 'You have sucessfully booked a property', payload);
+    
 	const resData = {
 		status: "success",
 		data: booking,
@@ -690,23 +701,23 @@ const validateBooking = catchAsync(async (req, res, next, mode='pay') => {
     sendResponse(res, 200, resData);
 })
 
-exports.schedule = () => cron.schedule('*/2 * * * * *', catchAsync( async () => {
+exports.schedule = cron.schedule('*/10 * * * * *', catchAsync( async (data) => {
     
   	console.log('running');
+  	console.log(data);
 
 	const bookings = await Booking.find({ 
 		status: PAYMENT_IN_PROGRESS,
 		paymentVerified: true,
 		failedAttempts: { $lt: 3 }
-	});
+	}).populate('card');
 
 	bookings.forEach(async (booking) => {
 		try {
-			const user = await User.findById(booking.user);
-
+            const { card } = booking;
 			const params = JSON.stringify({
-				authorization_code : user.paystack_auth_code,
-				email : user.email,
+				authorization_code : card.paystack_auth_code,
+				email : card.email,
 				amount : booking.nextPaymentAmount * 100
 			})
 

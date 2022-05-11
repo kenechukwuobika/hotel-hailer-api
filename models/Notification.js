@@ -11,6 +11,18 @@ const notificationSchema = new mongoose.Schema({
     ref: 'User'
   },
 
+  payload: {
+    endpoint: {
+        type: String,
+        required: true
+    },
+    reference: {
+        type: mongoose.Schema.ObjectId,
+        required: true
+    },
+    message: String
+  },
+
   status: {
     type: String,
     enum: {
