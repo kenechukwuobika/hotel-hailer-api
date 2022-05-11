@@ -701,7 +701,7 @@ const validateBooking = catchAsync(async (req, res, next, mode='pay') => {
     sendResponse(res, 200, resData);
 })
 
-exports.schedule = cron.schedule('*/10 * * * * *', catchAsync( async (data) => {
+exports.schedule = () => cron.schedule('*/10 * * * * *', catchAsync( async (data) => {
     
   	console.log('running');
   	console.log(data);

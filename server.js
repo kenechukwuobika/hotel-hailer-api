@@ -23,7 +23,7 @@ mongoose.connect(db, {
     useFindAndModify: false
 }).then(() => {
     console.log('database connection successful')
-    // bookingController.schedule.start();
+    // bookingController.schedule();
 }).catch(error => {
     console.log(error)
 });
