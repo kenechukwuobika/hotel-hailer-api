@@ -67,6 +67,7 @@ module.exports = (err, req, res, next) => {
         error.name = err.name;
         error.stack = err.stack;
         error.message = err.message;
+        console.log(error);
     
     if(process.env.NODE_ENV === 'development'){  
         sendDevError(error, res)
