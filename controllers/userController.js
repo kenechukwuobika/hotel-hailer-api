@@ -14,8 +14,8 @@ exports.setVendorId = (type = 'filter') => catchAsync(async (req, res, next) => 
             req.body.vendor = req.user._id;
         }
         else if(type === 'filter'){
-            const filter = req.filter ? {...req.filter} : {};
-            req.filter = { ...filter, vendor: req.user._id };
+            const customFilter = req.customFilter ? {...req.customFilter} : {};
+            req.customFilter = { ...customFilter, vendor: req.user._id };
         }
         else{
             req.params.id = req.user._id;
@@ -30,8 +30,8 @@ exports.setUserId = (type = 'filter') => catchAsync(async (req, res, next) => {
             req.body.user = req.user._id;
         }
         else if(type === 'filter'){
-            const filter = req.filter ? {...req.filter} : {};
-            req.filter = { ...filter, user: req.user._id };
+            const customFilter = req.customFilter ? {...req.customFilter} : {};
+            req.customFilter = { ...customFilter, user: req.user._id };
         }
         else{
             req.params.id = req.user._id;

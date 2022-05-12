@@ -3,14 +3,14 @@ const ApiFeatures = require('../utilities/ApiFeatures');
 const AppException = require('../utilities/AppException');
 
 exports.getDocuments = (Model, populateOption=null) => catchAsync(async(req, res, next) => {
-    let query = Model.find(req.filter);
+    let query = Model.find(req.customFilter);
 
     if(populateOption){
         query = query.populate(populateOption);
     }
 
     const documents = await new ApiFeatures(query, req)
-    .filter()
+    .filterFields()
     .paginate()
     .sort()
     .limitFields()

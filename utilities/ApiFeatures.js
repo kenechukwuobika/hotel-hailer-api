@@ -8,8 +8,7 @@ class ApiFeatures{
         this.fields = this.req.query.fields;
     }
 
-    filter(){
-        
+    filterFields(){
         this.queryString.forEach(query => {
             if(this.keywords.includes(query)){
                 delete this.req.query[query]
