@@ -14,11 +14,9 @@ const notificationSchema = new mongoose.Schema({
   payload: {
     endpoint: {
         type: String,
-        required: true
     },
     reference: {
         type: mongoose.Schema.ObjectId,
-        required: true
     },
     message: String
   },
