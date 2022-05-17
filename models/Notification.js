@@ -14,11 +14,18 @@ const notificationSchema = new mongoose.Schema({
   payload: {
     endpoint: {
         type: String,
+        required: true,
+        default: null
     },
     reference: {
         type: mongoose.Schema.ObjectId,
+        required: true,
+        default: null
     },
-    message: String
+    message: {
+        type: String,
+        default: null
+    }
   },
 
   status: {

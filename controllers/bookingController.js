@@ -314,9 +314,9 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
                     await booking.save();
 
                     const payload = {
-                        endpoint: 'bookings',
-                        id: booking.id,
-                        message: 'Check it out'
+                        endpoint: '/bookings',
+                        reference: booking.id,
+                        message: 'view booking'
                     }
 					await notificationController.notify(booking.user, 'You have sucessfully booked a property', payload);
 
@@ -557,7 +557,13 @@ const verifyBooking = async (user, booking, response) => {
                     booking.card = card._id
                     await booking.save();
 
-					notificationController.notify(booking.user, 'You have sucessfully booked a property');
+                    const payload = {
+                        endpoint: '/bookings',
+                        reference: booking.id,
+                        message: 'view booking'
+                    }
+
+					notificationController.notify(booking.user, 'You have sucessfully booked a property', payload);
 
 				}
 				

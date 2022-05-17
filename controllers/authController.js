@@ -49,7 +49,13 @@ exports.signup = catchAsync(async (req, res, next) => {
       if(!wallet) return next(new AppException(404, `Could not create wallet for user with id: ${newUser._id}}`));
     }
     
-    await notificationController.notify(newUser._id, 'Your account has been created');
+    const payload = {
+        endpoint: '/users/me',
+        reference: newUser.id,
+        message: 'view profile'
+    }
+
+    await notificationController.notify(newUser._id, 'Your account has been created', payload);
   
     // const url = `${req.protocol}://${req.get('host')}/me`;
     // const email = new Email(newUser, url);
@@ -195,7 +201,13 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
 	// 3) Update changedPasswordAt property for the user
 	// 4) Log the user in, send JWT
-  notificationController.notify(user._id, 'You successfully reset your password');
+    const payload = {
+        endpoint: '/users/me',
+        reference: newUser.id,
+        message: 'view profile'
+    }
+
+    notificationController.notify(user._id, 'You successfully reset your password', payload);
 	createSendToken(user, 200, res);
 });
 
