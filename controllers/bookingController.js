@@ -92,7 +92,6 @@ const calcAmountOnInterval = (totalAmount, paymentInterval, billableInterval) =>
 exports.getBookedDates = catchAsync(async (req, res, next) => {
     
     const { month, year, propertyId } = req.query;
-    console.log(req.query)
 
     const currentDate = new Date(Date.now());
     const lastDate = new Date(year, month, 0).getDate();
@@ -149,9 +148,7 @@ exports.getBookingPlans = catchAsync(async (req, res, next) => {
     let partialPaymentSupport = false;
     const partialPaymentPlans = [];
     const totalAmount = property.unitPrice * helpers.dayDiff(lodgeEndDate, lodgeStartDate);
-    console.log(differenceInWeeks)
-    console.log(lodgeEndDate)
-    console.log(lodgeStartDate)
+    
     const plans = [
         {
             name: WEEKLY,
@@ -249,8 +246,6 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
 		totalAmount,
         amountOnInterval
 	});
-
-    console.log(data)
   
 	const booking = new Booking(data);
 
@@ -276,7 +271,6 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
 
         return next(new AppException(400, 'Could not initialize booking'));
     } catch (error) {
-        console.log(error.message)
         return next(new AppException(400, 'Could not initialize booking'));
     }
 
@@ -703,7 +697,6 @@ const validateBooking = catchAsync(async (req, res, next, mode='pay') => {
     }
 
     totalAmount = property.unitPrice * helpers.dayDiff(lodgeEndDate, lodgeStartDate);
-    console.log(mode)
 
     const differenceInWeeks = calcDiffInWeeks(lodgeStartDate);
     const billableInterval = getBillableInterval(paymentInterval, differenceInWeeks)
