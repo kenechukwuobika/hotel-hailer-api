@@ -187,19 +187,57 @@ exports.getBookingPlans = catchAsync(async (req, res, next) => {
 });
 
 exports.initializeTransaction = catchAsync( async (req, res, next) => {
- 
-	const property = await Property.findById(req.params.propertyId);
-
-	if(!property){
-		return next(new AppException(401, "Property not found"));
-	}
-
+	let totalAmount = 0;
+    const { propertyId } = req.params;
 	const { lodgeEndDate, lodgeStartDate, paymentInterval } = req.body;
 	const { user } = req;
-	
-	if(lodgeEndDate && lodgeStartDate) {
-		totalAmount = property.unitPrice * helpers.dayDiff(lodgeEndDate, lodgeStartDate);
+    const currentDate = new Date(Date.now());
+
+    if(!paymentInterval){
+        return next(new AppException(400, "Please select payment interval"));
+    }
+
+    if(!lodgeStartDate){
+        return next(new AppException(400, "Please select lodge start date"));
+    }
+
+    if(!lodgeEndDate){
+        return next(new AppException(400, "Please select lodge end date"));
+    }
+
+    if(new Date(lodgeStartDate) < currentDate){
+        return next(new AppException(400, "Please select today or a future date"));
+    }
+
+    if(new Date(lodgeEndDate) < new Date(lodgeStartDate)){
+        return next(new AppException(400, "Lodge start date has to before the lodge end date"));
+    }
+
+    const property = await Property.findById(propertyId);
+
+    if(!property){
+		return next(new AppException(404, "Property not found"));
 	}
+
+    const existingBooking = await Booking.findOne({ 
+        property: property.id, 
+        $or: [
+            {
+                lodgeStartDate: { 
+                    $gte: currentDate, $lte:  new Date(lodgeEndDate)
+                },
+                lodgeEndDate: { 
+                    $gte: new Date(lodgeEndDate), $gte: new Date(lodgeStartDate)
+                }
+            }
+        ]
+    });
+
+    if(existingBooking){
+        return next(new AppException(400, "Property not available on selected dates"));
+    }
+	
+    totalAmount = property.unitPrice * helpers.dayDiff(lodgeEndDate, lodgeStartDate);
     
     const differenceInWeeks = calcDiffInWeeks(lodgeStartDate);
     const billableInterval = getBillableInterval(paymentInterval, differenceInWeeks)
@@ -278,12 +316,14 @@ exports.verifyTransation = catchAsync( async (req, res, next) => {
 					booking.totalAmountPaid += data.amount/100;
 					booking.lastPaymentAmount = data.amount/100;
 					booking.lastPaymentDate = Date.now();
-                    if(booking.paymentInterval !== FULL){
+                    // if(booking.paymentInterval !== FULL){
+                    if(booking.totalAmountPaid !== booking.totalAmount){
                         booking.status = PAYMENT_IN_PROGRESS;
                         booking.nextPaymentDate = helpers.calcNextPaymentDate(booking.paymentInterval);
                     }
                     else{
                         booking.status = PAYMENT_COMPLETE;
+                        booking.paymentInterval = FULL;
                     }
 					booking.paymentVerified = true;
 		
@@ -524,12 +564,14 @@ const verifyBooking = async (user, booking, response) => {
 					booking.totalAmountPaid += data.amount/100;
 					booking.lastPaymentAmount = data.amount/100;
 					booking.lastPaymentDate = Date.now();
-                    if(booking.paymentInterval !== FULL){
+                    // if(booking.paymentInterval !== FULL){
+                    if(booking.totalAmountPaid !== booking.totalAmount){
                         booking.status = PAYMENT_IN_PROGRESS;
                         booking.nextPaymentDate = helpers.calcNextPaymentDate(booking.paymentInterval);
                     }
                     else{
                         booking.status = PAYMENT_COMPLETE;
+                        booking.paymentInterval = FULL;
                     }
 					booking.paymentVerified = true;
 		
