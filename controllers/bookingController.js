@@ -82,7 +82,7 @@ const calcDiffInWeeks = (date) => {
 }
 
 const calcAmountOnInterval = (totalAmount, paymentInterval, billableInterval) => {   
-    if(paymentInterval === FULL){
+    if(paymentInterval === FULL || billableInterval === 0){
         return totalAmount;
     }else{
         return helpers.round5(totalAmount/billableInterval);
@@ -211,6 +211,8 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
 		totalAmount,
         amountOnInterval
 	});
+
+    console.log(data)
   
 	const booking = new Booking(data);
 
@@ -236,7 +238,7 @@ exports.initializeTransaction = catchAsync( async (req, res, next) => {
 
         return next(new AppException(400, 'Could not initialize booking'));
     } catch (error) {
-        // console.log(error)
+        console.log(error.message)
         return next(new AppException(400, 'Could not initialize booking'));
     }
 
@@ -397,7 +399,6 @@ exports.pay = catchAsync( async (req, res, next) => {
             }
         ]
     });
-
     if(existingBooking){
         return next(new AppException(400, "Property not available on selected dates"));
     }
@@ -408,7 +409,10 @@ exports.pay = catchAsync( async (req, res, next) => {
 	}
 	
 	// find booking with reference number
-	const card = await Card.findById(cardId);
+	const card = await Card.findOne({
+        _id: cardId,
+        user: user.id
+    });
   
 	// check if booking exists or not
 	if(!card){
