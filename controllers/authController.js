@@ -51,9 +51,9 @@ exports.signup = catchAsync(async (req, res, next) => {
     
     await notificationController.notify(newUser._id, 'Your account has been created');
   
-    const url = `${req.protocol}://${req.get('host')}/me`;
-    const email = new Email(newUser, url);
-    await email.sendWelcome();
+    // const url = `${req.protocol}://${req.get('host')}/me`;
+    // const email = new Email(newUser, url);
+    // await email.sendWelcome();
     createSendToken(newUser, 201, res);
 });
 
