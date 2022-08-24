@@ -4,6 +4,7 @@ const multer = require('multer');
 const Property = require('../models/Property');
 const factory = require('./factory');
 const catchAsync = require('../utilities/catchAsync');
+const AppError = require('../utilities/AppException');
 
 const multerStorage = multer.memoryStorage();
 
