@@ -79,7 +79,7 @@ exports.setPropertyId = (type = 'filter') => catchAsync(async (req, res, next) =
 exports.getDistances = catchAsync(async (req, res, next) => {
     const { lat, lng, unit } = req.query;
   
-    const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+    const multiplier = unit === 'mi' ? 0.000621371 : 0.00176;
   
     if (!lat || !lng) {
       next(
@@ -95,7 +95,7 @@ exports.getDistances = catchAsync(async (req, res, next) => {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [lng * 1, lat * 1]
+            coordinates: [lat * 1, lng * 1]
           },
           distanceField: 'distance',
           key: 'location',
