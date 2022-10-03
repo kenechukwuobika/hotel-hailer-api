@@ -7,13 +7,14 @@ const reviewRoute = require('./reviewRoute');
 
 const router = express.Router({ mergeParams: true });
 
+router.use(authController.protect);
+
 router.get('/nearby', propertyController.getDistances)
 
 router
 .route('/')
 .get(propertyController.getAllProperties)
 .post(
-    authController.protect, 
     authController.restrictTo('admin', 'vendor'), 
     userController.setVendorId('body'), 
     propertyController.uploadPhotos, 

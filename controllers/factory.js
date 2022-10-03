@@ -50,8 +50,8 @@ exports.createDocument = Model => catchAsync(async (req, res, next) => {
 })
 
 exports.getDocument = (Model, populateOption) => catchAsync(async (req, res, next) => {
-    const filter = {...req.filter, _id: req.params.id}
-    let query = Model.findOne(filter).select('-__v');
+    const customFilter = {...req.customFilter, _id: req.params.id}
+    let query = Model.findOne(customFilter).select('-__v');
     const key = Model.modelName.toLowerCase();
     if(populateOption){
         query = query.populate(populateOption);
@@ -68,11 +68,11 @@ exports.getDocument = (Model, populateOption) => catchAsync(async (req, res, nex
 })
 
 exports.updateDocument = Model => catchAsync(async (req, res, next) => {
+    const customFilter = {...req.customFilter, _id: req.params.id}
     const key = Model.modelName;
-    const filter = {...req.filter, _id: req.params.id}
     req.body.updatedAt = Date.now();
     
-    const document = await Model.findOneAndUpdate(filter, req.body, {
+    const document = await Model.findOneAndUpdate(customFilter, req.body, {
         new: true,
         runValidators: true
     });

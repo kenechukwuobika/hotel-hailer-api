@@ -23,7 +23,7 @@ const upload = multer({
 
 exports.resizedPhoto = (req, res, next) => {
   try {
-    if(req.files && Object.keys(req.files).length !== 0){
+    if(req.files && Object.keys(req.files).length !== 0) {
         // if(req.files.coverImage){
         //     const coverImage = req.files.coverImage[0];
         //     const mimeType = coverImage.mimetype.split('/')[1];
@@ -50,7 +50,7 @@ exports.resizedPhoto = (req, res, next) => {
             })
         
         }
-      }
+    }
   } catch (error) {
       console.log(error)
   }
@@ -64,13 +64,13 @@ exports.uploadPhotos = upload.fields([
 ]);
 
 exports.setPropertyId = (type = 'filter') => catchAsync(async (req, res, next) => {
-    if(req.user && req.user.role === 'vendor'){
+    if(req.user){
         if(type === 'body'){
             req.body.vendor = req.user._id;
         }
         else{
-            const filter = req.filter ? {...req.filter} : {};
-            req.filter = { ...filter, property: req.params.id };
+            const customFilter = req.customFilter ? {...req.customFilter} : {};
+            req.customFilter = { ...customFilter, property: req.params.id };
         }
     }
     next();
@@ -95,7 +95,7 @@ exports.getDistances = catchAsync(async (req, res, next) => {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [lat * 1, lng * 1]
+            coordinates: [lng * 1, lat * 1]
           },
           distanceField: 'distance',
           key: 'location',
