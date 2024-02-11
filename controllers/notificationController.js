@@ -12,17 +12,20 @@ exports.notify = catchAsync(async (id, text, payload) => {
     const notification = await Notification.create({
         user: id,
         text,
-        payload
-    })
-})
+        payload,
+    });
+});
 
 exports.markAsRead = catchAsync(async (req, res, next) => {
-    const notifications = await Notification.updateMany({user: req.user._id, status: 'unread'}, {
-        "$set": { status: 'read' }
-    })
+    const notifications = await Notification.updateMany(
+        { user: req.user._id, status: 'unread' },
+        {
+            $set: { status: 'read' },
+        }
+    );
 
     res.status(200).json({
-        status: "success",
-        message: "Notifications read"
-    })
-})
+        status: 'success',
+        message: 'Notifications read',
+    });
+});

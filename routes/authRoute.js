@@ -1,4 +1,4 @@
-module.exports = function(io) {
+module.exports = function (io) {
     const express = require('express');
 
     const authController = require('../controllers/authController');
@@ -14,4 +14,4 @@ module.exports = function(io) {
     router.route('/resetpassword').post(authController.resetPassword);
 
     return router;
-}
+};

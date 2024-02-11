@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 const User = require('./User');
 
-const Admin = User.discriminator('admin',  
+const Admin = User.discriminator(
+    'admin',
     new mongoose.Schema({
-        employeeNo:{
+        employeeNo: {
             type: Number,
-            required: [true, 'Please enter your employee Number']
-        }
+            required: [true, 'Please enter your employee Number'],
+        },
     })
 );
 

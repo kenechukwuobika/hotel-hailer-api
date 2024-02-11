@@ -1,11 +1,9 @@
-const Email = require('../controllers/emailController')
+const Email = require('../controllers/emailController');
 
-class NewUserRegistration{
-    constructor(io){
-        
-    }
+class NewUserRegistration {
+    constructor(io) {}
 
-    notify(){
+    notify() {
         const email = new Email();
     }
 }

@@ -1,5 +1,5 @@
 class AppException extends Error {
-    constructor(statusCode, message){
+    constructor(statusCode, message) {
         super(message);
         this.statusCode = statusCode;
         this.status = statusCode === 500 ? 'error' : 'fail';

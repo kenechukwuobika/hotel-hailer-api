@@ -22,31 +22,30 @@ const globalErrorHandler = require('./controllers/errorController');
 
 const app = express();
 
-const httpServer = require("http").createServer(app);
-const io  = require('socket.io')(httpServer, {
+const httpServer = require('http').createServer(app);
+const io = require('socket.io')(httpServer, {
     cors: {
-      origin: '*',
-    }
+        origin: '*',
+    },
 });
 let ids = {};
 
-io.on('connection', socket => {
-    const webSocket = new Websocket(socket)
+io.on('connection', (socket) => {
+    const webSocket = new Websocket(socket);
     const user = webSocket.verifyToken();
-    if(user){
+    if (user) {
         const userSockets = app.get('userSockets') || {};
         ids = { ...userSockets, [socket.id]: { userID: user._id } };
-        app.set('userSockets', ids)
-        io.to(socket.id).emit('notifications', [socket.id])   
+        app.set('userSockets', ids);
+        io.to(socket.id).emit('notifications', [socket.id]);
     }
 
     socket.on('disconnect', () => {
         const userSockets = app.get('userSockets') || {};
-        delete(userSockets[socket.id])
-        app.set('userSockets', userSockets)
-        console.log(userSockets)
-    })
-
+        delete userSockets[socket.id];
+        app.set('userSockets', userSockets);
+        console.log(userSockets);
+    });
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -71,8 +70,8 @@ app.use('/api/v1/transactions', transactionRoute);
 app.use('/api/v1/wallets', walletRoute);
 app.use('/api/v1/notifications', notificationRoute);
 
-app.all('*', ( req, res, next) => {
-    next(new AppException(404, `Route not found`))
+app.all('*', (req, res, next) => {
+    next(new AppException(404, `Route not found`));
 });
 
 app.use(globalErrorHandler);

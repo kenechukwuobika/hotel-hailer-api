@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const User = require('./User');
 
-const Customer = User.discriminator('customer',  
+const Customer = User.discriminator(
+    'customer',
     new mongoose.Schema({
         paystack_customer_id: String,
         paystack_auth_code: String,

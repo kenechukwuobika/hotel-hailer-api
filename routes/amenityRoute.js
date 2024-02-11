@@ -8,15 +8,17 @@ const router = express.Router();
 router.use(authController.protect);
 
 router
-.route('/')
-.get(amenityController.getAllAmenities)
-.post(authController.restrictTo('admin'), amenityController.createAmenity);
+    .route('/')
+    .get(amenityController.getAllAmenities)
+    .post(authController.restrictTo('admin'), amenityController.createAmenity);
 
 router
-.route('/:id')
-.get(amenityController.getAmenity)
-.patch(authController.restrictTo('admin'), amenityController.updateAmenity)
-.delete(authController.restrictTo('admin'), amenityController.deleteAmenity);
+    .route('/:id')
+    .get(amenityController.getAmenity)
+    .patch(authController.restrictTo('admin'), amenityController.updateAmenity)
+    .delete(
+        authController.restrictTo('admin'),
+        amenityController.deleteAmenity
+    );
 
 module.exports = router;
-

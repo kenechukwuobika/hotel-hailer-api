@@ -9,16 +9,15 @@ const router = express.Router({ mergeParams: true });
 router.use(authController.protect);
 
 router
-.route('/')
-.get(reviewController.getAllReviews)
-.post(userController.setUserId('body'), reviewController.createReview);
+    .route('/')
+    .get(reviewController.getAllReviews)
+    .post(userController.setUserId('body'), reviewController.createReview);
 
 router
-.use(userController.setUserId())
-.route('/:id')
-.get(reviewController.getReview)
-.patch(reviewController.updateReview)
-.delete(reviewController.deleteReview);
+    .use(userController.setUserId())
+    .route('/:id')
+    .get(reviewController.getReview)
+    .patch(reviewController.updateReview)
+    .delete(reviewController.deleteReview);
 
 module.exports = router;
-

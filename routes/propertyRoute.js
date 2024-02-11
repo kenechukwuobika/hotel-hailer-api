@@ -9,37 +9,36 @@ const router = express.Router({ mergeParams: true });
 
 router.use(authController.protect);
 
-router.get('/nearby', propertyController.getDistances)
+router.get('/nearby', propertyController.getDistances);
 
 router
-.route('/')
-.get(propertyController.getAllProperties)
-.post(
-    authController.restrictTo('admin', 'vendor'), 
-    userController.setVendorId('body'), 
-    propertyController.uploadPhotos, 
-    propertyController.resizedPhoto, 
-    propertyController.createProperty
-);
+    .route('/')
+    .get(propertyController.getAllProperties)
+    .post(
+        authController.restrictTo('admin', 'vendor'),
+        userController.setVendorId('body'),
+        propertyController.uploadPhotos,
+        propertyController.resizedPhoto,
+        propertyController.createProperty
+    );
 
 router
-.route('/:id')
-.get(propertyController.getProperty)
-.patch(
-    authController.protect, 
-    authController.restrictTo('admin', 'vendor'), 
-    userController.setVendorId('filter'),
-    propertyController.uploadPhotos,
-    propertyController.resizedPhoto,
-    propertyController.updateProperty
-)
-.delete(
-    authController.protect,
-    authController.restrictTo('admin', 'vendor'),
-    propertyController.deleteProperty
-);
+    .route('/:id')
+    .get(propertyController.getProperty)
+    .patch(
+        authController.protect,
+        authController.restrictTo('admin', 'vendor'),
+        userController.setVendorId('filter'),
+        propertyController.uploadPhotos,
+        propertyController.resizedPhoto,
+        propertyController.updateProperty
+    )
+    .delete(
+        authController.protect,
+        authController.restrictTo('admin', 'vendor'),
+        propertyController.deleteProperty
+    );
 
 router.use('/:id/reviews', propertyController.setPropertyId(), reviewRoute);
 
 module.exports = router;
-

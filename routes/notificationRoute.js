@@ -8,19 +8,21 @@ const router = express.Router();
 
 router.use(authController.protect);
 
-router.get('/markAsRead', notificationController.markAsRead)
+router.get('/markAsRead', notificationController.markAsRead);
 
 router
-.route('/')
-.get(userController.setUserId(), notificationController.getAllNotifications)
-.post(authController.restrictTo('admin'), notificationController.createNotification);
+    .route('/')
+    .get(userController.setUserId(), notificationController.getAllNotifications)
+    .post(
+        authController.restrictTo('admin'),
+        notificationController.createNotification
+    );
 
 router
-.use(authController.restrictTo('admin'))
-.route('/:id')
-.get(notificationController.getNotification)
-.patch(notificationController.updateNotification)
-.delete(notificationController.deleteNotification);
+    .use(authController.restrictTo('admin'))
+    .route('/:id')
+    .get(notificationController.getNotification)
+    .patch(notificationController.updateNotification)
+    .delete(notificationController.deleteNotification);
 
 module.exports = router;
-
